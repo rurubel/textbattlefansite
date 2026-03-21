@@ -1,0 +1,60 @@
+export const positions = {
+  attacker: {
+    id: 'attacker',
+    name: '공격수',
+    description: '공격과 치명타를 중시하는 포지션',
+    attributes: ['공격력 중시', '치명타 확률 선호', '선공 중요'],
+  },
+  defender: {
+    id: 'defender',
+    name: '수비수',
+    description: '방어와 체력을 중시하는 포지션',
+    attributes: ['방어력 중시', '체력 선호', '버티는 플레이'],
+  },
+  balanced: {
+    id: 'balanced',
+    name: '밸런스',
+    description: '공수 균형을 추구하는 포지션',
+    attributes: ['공수 균형', '안정적 운영', '범용성 높음'],
+  },
+  speedster: {
+    id: 'speedster',
+    name: '스피드스터',
+    description: '선공과 민첩성을 중시하는 포지션',
+    attributes: ['선공 중시', '민첩성 집중', '선제공격 추구'],
+  },
+  dps: {
+    id: 'dps',
+    name: '주딜러',
+    description: '팀의 화력을 책임지는 포지션',
+    attributes: ['주력 딜러', '공격력 극대화', '빠른 전투 선호'],
+  },
+  tank: {
+    id: 'tank',
+    name: '탱커',
+    description: '팀을 지키는 포지션',
+    attributes: ['방어/체력 집중', '생존력', '장기전 선호'],
+  },
+};
+
+export const answerWeights = {
+  atk: { attacker: 2, dps: 2 },
+  def: { defender: 2, tank: 2 },
+  bal: { balanced: 2 },
+  high: { speedster: 2, attacker: 1 },
+  mid: { balanced: 2 },
+  low: { defender: 2, tank: 1 },
+  crit: { attacker: 2, dps: 1 },
+  both: { balanced: 2 },
+  spd: { speedster: 2 },
+  hp: { tank: 2, defender: 1 },
+  dps: { dps: 2, attacker: 1 },
+  tank: { tank: 2, defender: 1 },
+  support: { balanced: 1 },
+  speed: { speedster: 2 },
+  damage: { attacker: 2, dps: 2 },
+  survive: { defender: 2, tank: 2 },
+  '1': { attacker: 2, dps: 2 },
+  '2': { balanced: 1 },
+  '3': { defender: 2, tank: 2 },
+};

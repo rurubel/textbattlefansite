@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>텍스트배틀 팬사이트</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="header">
+    <h1 class="logo">텍스트배틀 팬사이트</h1>
+    <nav class="nav">
+      <button class="nav-btn active" data-section="home">홈</button>
+      <button class="nav-btn" data-section="probability">가능성 계산기</button>
+      <button class="nav-btn" data-section="efficiency">효율 계산기</button>
+      <button class="nav-btn" data-section="speed">선공 계산기</button>
+      <button class="nav-btn" data-section="position-test">포지션 성향 테스트</button>
+      <button class="nav-btn" data-section="card-simulator">카드 시뮬레이터</button>
+      <button class="nav-btn" data-section="characters">캐릭터 소개</button>
+    </nav>
+    <button class="mobile-menu-btn" aria-label="메뉴">☰</button>
+  </header>
+
+  <main class="main">
+    <!-- Home Section -->
+    <section id="home" class="section active">
+      <div class="card">
+        <h2>텍스트배틀</h2>
+        <ul>
+          <li>AI 기반 캐릭터 생성</li>
+          <li>1vs1 전투</li>
+          <li>2턴 후 체력으로 승부</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>카드 시스템</h2>
+        <ul>
+          <li>1~5성</li>
+          <li>주옵 1개 + 성급만큼 부옵</li>
+          <li>옵션 종류: 공, 속, 크, 방, 체</li>
+          <li>부옵 등급: 흰, 초, 파, 보, 황 (모두 랜덤)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>효율</h2>
+        <p>효율 = 공×2 + 방×2 + 체</p>
+      </div>
+      <div class="card">
+        <h2>선공</h2>
+        <p>선공 = 민첩성 + (속부옵 × 변환값)</p>
+      </div>
+    </section>
+
+    <!-- Efficiency Calculator -->
+    <section id="efficiency" class="section">
+      <div class="card">
+        <h2>효율 계산기</h2>
+        <div class="form-group">
+          <label for="eff-atk">공격</label>
+          <input type="number" id="eff-atk" value="0" min="0">
+        </div>
+        <div class="form-group">
+          <label for="eff-def">방어</label>
+          <input type="number" id="eff-def" value="0" min="0">
+        </div>
+        <div class="form-group">
+          <label for="eff-hp">체력</label>
+          <input type="number" id="eff-hp" value="0" min="0">
+        </div>
+        <div class="result-box">
+          <strong>효율</strong>: <span id="eff-result">0</span>
+        </div>
+        <p class="formula-hint">효율 = 공×2 + 방×2 + 체</p>
+      </div>
+    </section>
+
+    <!-- Speed Calculator -->
+    <section id="speed" class="section">
+      <div class="card">
+        <h2>선공 계산기</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="speed-my-agi">내 민첩성</label>
+            <input type="number" id="speed-my-agi" value="0" min="0">
+          </div>
+          <div class="form-group">
+            <label for="speed-my-spd">내 속부옵</label>
+            <input type="number" id="speed-my-spd" value="0" min="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="speed-enemy-agi">상대 민첩성</label>
+            <input type="number" id="speed-enemy-agi" value="0" min="0">
+          </div>
+          <div class="form-group">
+            <label for="speed-enemy-spd">상대 속부옵</label>
+            <input type="number" id="speed-enemy-spd" value="0" min="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="speed-conv">속부옵 변환값</label>
+          <input type="number" id="speed-conv" value="1" step="0.01">
+        </div>
+        <div class="result-box result-highlight">
+          <span id="speed-result">값을 입력하세요</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Probability Calculator -->
+    <section id="probability" class="section">
+      <div class="card">
+        <h2>가능성 계산기</h2>
+        <div class="form-group">
+          <label>현재 부옵 리스트</label>
+          <div id="prob-sub-list" class="sub-list">
+            <p class="hint">부옵을 추가하세요 (최대 4개)</p>
+          </div>
+          <div class="sub-add-form">
+            <select id="prob-opt-type">
+              <option value="atk">공</option>
+              <option value="spd">속</option>
+              <option value="crit">크</option>
+              <option value="def">방</option>
+              <option value="hp">체</option>
+            </select>
+            <select id="prob-grade">
+              <option value="0">흰</option>
+              <option value="1">초</option>
+              <option value="2">파</option>
+              <option value="3">보</option>
+              <option value="4">황</option>
+            </select>
+            <input type="number" id="prob-value" placeholder="값" min="0">
+            <button type="button" class="btn btn-small" id="prob-add-btn">추가</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="prob-target-star">목표 성급</label>
+          <select id="prob-target-star">
+            <option value="1">1성</option>
+            <option value="2">2성</option>
+            <option value="3">3성</option>
+            <option value="4">4성</option>
+            <option value="5" selected>5성</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="prob-target-eff">목표 효율</label>
+          <input type="number" id="prob-target-eff" value="100" min="0">
+        </div>
+        <button type="button" class="btn btn-primary" id="prob-calc-btn">계산하기</button>
+        <div class="result-box result-highlight" id="prob-result">
+          결과가 여기에 표시됩니다
+        </div>
+      </div>
+    </section>
+
+    <!-- Position Tendency Test -->
+    <section id="position-test" class="section">
+      <div class="card">
+        <h2>포지션 성향 테스트</h2>
+        <div id="position-intro">
+          <p>7개의 질문에 답하여 나에게 맞는 포지션을 알아보세요.</p>
+          <button type="button" class="btn btn-primary" id="position-start-btn">테스트 시작</button>
+        </div>
+        <div id="position-questions" class="hidden">
+          <div class="question-card">
+            <p class="question-number" id="q-num">Q1</p>
+            <p class="question-text" id="q-text"></p>
+            <div class="question-options" id="q-options"></div>
+            <div class="question-actions" id="q-actions">
+              <button type="button" class="btn btn-primary" id="q-next-btn">다음 질문</button>
+              <button type="button" class="btn btn-secondary hidden" id="q-result-btn">결과 보기</button>
+            </div>
+          </div>
+        </div>
+        <div id="position-result" class="hidden">
+          <h3>추천 포지션</h3>
+          <div class="result-position" id="result-position"></div>
+          <div class="result-attributes" id="result-attributes"></div>
+          <div class="result-actions">
+            <button type="button" class="btn btn-primary" id="result-continue-btn">테스트 계속하기</button>
+            <button type="button" class="btn btn-secondary" id="result-restart-btn">처음부터 다시</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Card Simulator -->
+    <section id="card-simulator" class="section">
+      <div class="card">
+        <h2>카드 시뮬레이터</h2>
+        <button type="button" class="btn btn-primary" id="card-roll-btn">5성 카드 뽑기</button>
+        <div id="card-result" class="card-result hidden">
+          <div class="sim-card">
+            <div class="sim-card-header">★★★★★</div>
+            <div class="sim-card-main" id="sim-main"></div>
+            <div class="sim-card-subs" id="sim-subs"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Characters -->
+    <section id="characters" class="section">
+      <div class="card">
+        <h2>캐릭터 소개</h2>
+        <div id="character-grid" class="character-grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>텍스트배틀 팬사이트 · 정적 사이트 · GitHub Pages</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
