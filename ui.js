@@ -54,7 +54,7 @@ function initSpeedCalc() {
     );
     if (res === 'mine') result.textContent = '당신이 선공입니다!';
     else if (res === 'enemy') result.textContent = '상대가 선공입니다.';
-    else result.textContent = '동시 선공 (무승부)';
+    else result.textContent = '당신과 상대의 민첩성이 동일합니다.';
   };
 
   [myAgi, mySpd, enemyAgi, enemySpd, conv].forEach((el) =>
@@ -218,7 +218,7 @@ function initPositionTest() {
     showResult();
   });
 
-  continueBtn.addEventListener('click', () => showQuestion(currentQ + 1));
+  continueBtn.addEventListener('click', () => showQuestion(currentQ));
   restartBtn.addEventListener('click', showIntro);
 
   showIntro();
