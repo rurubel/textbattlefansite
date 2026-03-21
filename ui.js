@@ -2,7 +2,7 @@
  * UI bindings and event handlers
  */
 import { calculateEfficiency } from './logic/efficiency.js';
-import { getFirstStrike } from './logic/speed.js';
+import { getFirstStrikeDetail } from './logic/speed.js';
 import {
   runMonteCarlo,
   formatProbability,
@@ -45,16 +45,14 @@ function initSpeedCalc() {
   const result = document.getElementById('speed-result');
 
   const update = () => {
-    const res = getFirstStrike(
+    const text = getFirstStrikeDetail(
       Number(myAgi.value) || 0,
       Number(mySpd.value) || 0,
       Number(enemyAgi.value) || 0,
       Number(enemySpd.value) || 0,
       Number(conv.value) || 1
     );
-    if (res === 'mine') result.textContent = '당신이 선공입니다!';
-    else if (res === 'enemy') result.textContent = '상대가 선공입니다.';
-    else result.textContent = '당신과 상대의 민첩성이 동일합니다.';
+    result.textContent = text;
   };
 
   [myAgi, mySpd, enemyAgi, enemySpd, conv].forEach((el) =>
