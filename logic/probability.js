@@ -8,23 +8,18 @@ const OPTION_TYPES = ['atk', 'spd', 'crit', 'def', 'hp'];
 const GRADE_NAMES = ['흰', '초', '파', '보', '황'];
 
 // Grade to value range [min, max] for each stat
-const GRADE_VALUE_RANGES = {
-  atk: { 0: [1, 3], 1: [2, 5], 2: [4, 8], 3: [6, 12], 4: [10, 18] },
-  spd: { 0: [1, 2], 1: [2, 4], 2: [3, 6], 3: [5, 10], 4: [8, 15] },
-  crit: { 0: [1, 2], 1: [2, 4], 2: [3, 6], 3: [5, 10], 4: [8, 15] },
-  def: { 0: [1, 3], 1: [2, 5], 2: [4, 8], 3: [6, 12], 4: [10, 18] },
-  hp: { 0: [2, 5], 1: [4, 10], 2: [8, 18], 3: [12, 25], 4: [20, 40] },
+const GRADE_VALUES = {
+  atk: { 0: 1, 1: 2, 2: 3, 3: 4, 4: 5 },
+  spd: { 0: 2, 1: 3, 2: 4, 3: 5, 4: 6 },
+  crit: { 0: 1, 1: 1.5, 2: 2, 3: 2.5, 4: 3 },
+  def: { 0: 0.5, 1: 1, 2: 1.5, 3: 2.0, 4: 2.5 },
+  hp: { 0: 2, 1: 3, 2: 5, 3: 6, 4: 8 },
 };
-
-function getRandomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 
 function randomSubOption() {
   const optType = OPTION_TYPES[Math.floor(Math.random() * 5)];
   const grade = Math.floor(Math.random() * 5);
-  const [min, max] = GRADE_VALUE_RANGES[optType][grade];
-  const value = getRandomInt(min, max);
+  const value = GRADE_VALUES[optType][grade];
   return { type: optType, grade, value };
 }
 
@@ -64,10 +59,9 @@ export function runMonteCarlo(currentSubs, targetStar, targetEfficiency, iterati
 }
 
 export function formatProbability(p) {
-  if (p < 0.01 && p > 0) {
-    return p.toFixed(8);
-  }
+  if (p > 0 && p < 1e-8) return 0;
+  if (p < 0.01) return Number(p.toFixed(8));
   return Math.round(p * 100) / 100;
 }
 
-export { GRADE_NAMES, OPTION_TYPES };
+export { GRADE_NAMES, OPTION_TYPES, GRADE_VALUES };

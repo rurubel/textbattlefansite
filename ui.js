@@ -7,6 +7,7 @@ import {
   runMonteCarlo,
   formatProbability,
   GRADE_NAMES,
+  GRADE_VALUES,
   OPTION_TYPES,
 } from './logic/probability.js';
 import { getQuestions, calculatePosition } from './logic/testLogic.js';
@@ -65,7 +66,6 @@ function initProbabilityCalc() {
   const subList = document.getElementById('prob-sub-list');
   const optType = document.getElementById('prob-opt-type');
   const grade = document.getElementById('prob-grade');
-  const valueInput = document.getElementById('prob-value');
   const addBtn = document.getElementById('prob-add-btn');
   const targetStar = document.getElementById('prob-target-star');
   const targetEff = document.getElementById('prob-target-eff');
@@ -83,7 +83,9 @@ function initProbabilityCalc() {
       const div = document.createElement('div');
       div.className = 'sub-item';
       div.innerHTML = `
-        <span>${OPT_LABELS[sub.type]} ${GRADE_NAMES[sub.grade]} ${sub.value}</span>
+        <span class="${GRADE_CLASSES[sub.grade]}">
+  ${OPT_LABELS[sub.type]} +${sub.value}
+</span>
         <button type="button" data-index="${i}">삭제</button>
       `;
       div.querySelector('button').addEventListener('click', () => {
@@ -98,23 +100,50 @@ function initProbabilityCalc() {
     if (currentSubs.length >= 4) return;
     const type = optType.value;
     const g = parseInt(grade.value, 10);
-    const val = parseInt(valueInput.value, 10) || 0;
+    const val = GRADE_VALUES[type][g];
     currentSubs.push({ type, grade: g, value: val });
-    valueInput.value = '';
     renderSubList();
   });
 
   calcBtn.addEventListener('click', () => {
     resultEl.textContent = '계산 중...';
     resultEl.classList.remove('error');
+  
     setTimeout(() => {
       try {
         const star = parseInt(targetStar.value, 10) || 5;
         const eff = parseInt(targetEff.value, 10) || 0;
+        const currentEff = calculateEfficiency(currentSubs);
+        const remaining = Math.max(0, star - currentSubs.length);
+  
+        if (currentEff >= eff) {
+          resultEl.textContent = `목표 효율 ${eff}의 달성 확률은 100% 입니다.`;
+          return;
+        }
+  
+        const maxPossible = currentEff + (remaining * 10);
+  
+        if (eff > maxPossible) {
+          resultEl.textContent = `목표 효율 ${eff} 달성 확률: 0%`;
+          return;
+        }
+  
         const p = runMonteCarlo(currentSubs, star, eff, 100000);
-        const formatted = formatProbability(p);
-        const pct = p < 0.01 ? (p * 100).toFixed(8) : (p * 100).toFixed(2);
+  
+        // 🔥 확률 후처리 (초소수 → 0 처리)
+        let finalP = p;
+        if (p > 0 && p < 1e-8) {
+          finalP = 0;
+        }
+  
+        const pct = finalP === 0
+          ? '0'
+          : finalP < 0.01
+            ? (finalP * 100).toFixed(8)
+            : (finalP * 100).toFixed(2);
+  
         resultEl.textContent = `목표 효율 ${eff} 달성 확률: ${pct}%`;
+  
       } catch (e) {
         resultEl.textContent = '계산 오류: ' + e.message;
         resultEl.classList.add('error');
@@ -229,27 +258,43 @@ function initCardSimulator() {
   const simMain = document.getElementById('sim-main');
   const simSubs = document.getElementById('sim-subs');
 
+  const MAIN_VALUES = {
+    atk: 30,
+    spd: 30,
+    def: 30,
+    hp: 30,
+    crit: 15,
+  };
+
+  function randomMainStat() {
+    const types = ['atk', 'spd', 'crit', 'def', 'hp'];
+    const type = types[Math.floor(Math.random() * 5)];
+    const value = MAIN_VALUES[type];
+  
+    return { type, value };
+  }
+
   function randomStat() {
     const types = ['atk', 'spd', 'crit', 'def', 'hp'];
     const grades = [0, 1, 2, 3, 4];
     const type = types[Math.floor(Math.random() * 5)];
     const grade = grades[Math.floor(Math.random() * 5)];
-    const valueRanges = { atk: 10, spd: 8, crit: 6, def: 10, hp: 25 };
-    const maxVal = valueRanges[type] || 10;
-    const value = Math.floor(Math.random() * maxVal) + 1;
+    const value = GRADE_VALUES[type][grade];
     return { type, grade, value };
   }
 
   rollBtn.addEventListener('click', () => {
-    const main = randomStat();
+    const main = randomMainStat();
     const subs = Array.from({ length: 5 }, () => randomStat());
     simMain.innerHTML = `
-      <span class="${GRADE_CLASSES[main.grade]}">${OPT_LABELS[main.type]} ${GRADE_NAMES[main.grade]} +${main.value}</span>
-    `;
+  <span>
+    ${OPT_LABELS[main.type]} +${main.value}%
+  </span>
+`;
     simSubs.innerHTML = subs
       .map(
         (s) =>
-          `<div class="sub-stat"><span class="${GRADE_CLASSES[s.grade]}">${OPT_LABELS[s.type]} ${GRADE_NAMES[s.grade]} +${s.value}</span></div>`
+          `<div class="sub-stat"><span class="${GRADE_CLASSES[s.grade]}">${OPT_LABELS[s.type]} +${s.value}</span></div>`
       )
       .join('');
     cardResult.classList.remove('hidden');

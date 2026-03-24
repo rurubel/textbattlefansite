@@ -2,7 +2,7 @@ export const positions = {
   bruiser: {
     id: 'bruiser',
     name: '브루저',
-    description: '높은 체력과 준수한 공격력을 가진 딜탱',
+    description: '체력과 공격력을 겸비한 딜탱',
     attributes: [
       '상위',
       '간단한 스탯',
@@ -16,7 +16,7 @@ export const positions = {
   tank: {
     id: 'tank',
     name: '탱커',
-    description: '',
+    description: '높은 체력으로 상대의 공격을 버텨내는 탱커',
     attributes: [
       '상위',
       '간단한 스탯',
@@ -30,7 +30,7 @@ export const positions = {
   extreme_speed: {
     id: 'extreme_speed',
     name: '극민발',
-    description: '상위 포지션, 간단한 스탯, 어려운 난이도',
+    description: '많은 민첩성과 높은 공부옵으로 딜과 속도가 하나된 발도',
     attributes: [
       '상위',
       '간단한 스탯',
@@ -44,7 +44,7 @@ export const positions = {
   min_speed: {
     id: 'min_speed',
     name: '민발',
-    description: '중하위 포지션, 특별한 스탯',
+    description: '높은 민첩성으로 선공전에서 우위를 점하는 발도',
     attributes: [
       '중하위',
       '특별한 스탯',
@@ -58,7 +58,7 @@ export const positions = {
   extreme_atk: {
     id: 'extreme_atk',
     name: '극공발',
-    description: '중하위 포지션, 특별한 스탯',
+    description: '공격력을 주력으로 올려 딜을 극대화하는 발도',
     attributes: [
       '중하위',
       '특별한 스탯',
@@ -72,7 +72,7 @@ export const positions = {
   atk_speed: {
     id: 'atk_speed',
     name: '공발',
-    description: '중하위 포지션, 간단한 스탯, 어려운 난이도',
+    description: '적당한 공격성과 민첩성이 결합된 발도',
     attributes: [
       '중하위',
       '간단한 스탯',
@@ -86,7 +86,7 @@ export const positions = {
   berserker: {
     id: 'berserker',
     name: '버서커',
-    description: '중하위 포지션, 특별한 스탯',
+    description: '높은 공격성과 준수한 체력으로 안정적인 딜을 뽐내는 안티 탱커',
     attributes: [
       '중하위',
       '특별한 스탯',
@@ -100,7 +100,7 @@ export const positions = {
   atk_bruiser: {
     id: 'atk_bruiser',
     name: '공브루저',
-    description: '중하위 포지션, 간단한 스탯',
+    description: '공격성을 주력으로 사용하는 브루저',
     attributes: [
       '중하위',
       '간단한 스탯',
@@ -114,7 +114,7 @@ export const positions = {
   balance: {
     id: 'balance',
     name: '밸런스',
-    description: '중하위 포지션, 간단한 스탯, 쉬운 난이도',
+    description: '모든 스탯을 균형잡은 포지션',
     attributes: [
       '중하위',
       '간단한 스탯',
@@ -128,7 +128,7 @@ export const positions = {
   non_tank: {
     id: 'non_tank',
     name: '논탱',
-    description: '상위 포지션, 간단한 스탯, 쉬운 난이도',
+    description: '방어력에서 비롯된 데미지 감소가 특징인 탱커',
     attributes: [
       '좋음',
       '간단한 스탯',
