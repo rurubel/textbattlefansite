@@ -12,6 +12,7 @@
     <nav class="nav">
       <button class="nav-btn active" data-section="home">홈</button>
       <button class="nav-btn" data-section="probability">가능성 계산기</button>
+      <button class="nav-btn" data-section="ani-enhancement">애니 강화 시뮬레이터</button>
       <button class="nav-btn" data-section="efficiency">효율 계산기</button>
       <button class="nav-btn" data-section="speed">선공 계산기</button>
       <button class="nav-btn" data-section="position-test">포지션 성향 테스트</button>
@@ -157,6 +158,34 @@
         </div>
         <button type="button" class="btn btn-primary" id="prob-calc-btn">계산하기</button>
         <div class="result-box result-highlight" id="prob-result">
+          결과가 여기에 표시됩니다
+        </div>
+      </div>
+    </section>
+
+    <!-- Ani Enhancement Simulator -->
+    <section id="ani-enhancement" class="section">
+      <div class="card">
+        <h2>애니 강화 시뮬레이터</h2>
+        <div class="form-group">
+          <label for="ani-mode">강화 모드</label>
+          <select id="ani-mode">
+            <option value="normal" selected>일반 강화 (집중 강화 없음)</option>
+            <option value="focus">집중 강화 (옵션 1개 고정)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="ani-focus-option">집중 강화 옵션</label>
+          <select id="ani-focus-option" disabled>
+            <option value="atk">공</option>
+            <option value="spd">속</option>
+            <option value="crit">크</option>
+            <option value="def">방</option>
+            <option value="hp">체</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-primary" id="ani-run-btn">0강 → 30강 시뮬레이션</button>
+        <div class="result-box ani-result-box" id="ani-result">
           결과가 여기에 표시됩니다
         </div>
       </div>

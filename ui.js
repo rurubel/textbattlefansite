@@ -12,6 +12,7 @@ import {
 } from './logic/probability.js';
 import { getQuestions, calculatePosition } from './logic/testLogic.js';
 import { characters } from './characters.js';
+import { runAniEnhancementSimulation } from './logic/aniEnhancementSimulator.js';
 
 const OPT_LABELS = { atk: '공', spd: '속', crit: '크', def: '방', hp: '체' };
 const GRADE_CLASSES = ['grade-white', 'grade-green', 'grade-blue', 'grade-purple', 'grade-yellow'];
@@ -301,6 +302,60 @@ function initCardSimulator() {
   });
 }
 
+// --- Ani Enhancement Simulator ---
+function initAniEnhancementSimulator() {
+  const modeSelect = document.getElementById('ani-mode');
+  const focusOptionSelect = document.getElementById('ani-focus-option');
+  const runBtn = document.getElementById('ani-run-btn');
+  const resultEl = document.getElementById('ani-result');
+
+  if (!modeSelect || !focusOptionSelect || !runBtn || !resultEl) return;
+
+  function updateModeUI() {
+    const isFocus = modeSelect.value === 'focus';
+    focusOptionSelect.disabled = !isFocus;
+  }
+
+  function renderResult(result) {
+    const { stats, optionCounts, optionValueSums, useFocus, focusOption } = result;
+    const focusText = useFocus && focusOption
+      ? `
+        <p><strong>집중 강화 옵션</strong>: ${OPT_LABELS[focusOption]}</p>
+        <p><strong>집중 강화 옵션 강화 횟수</strong>: ${stats.focusHit}회</p>
+      `
+      : '';
+
+    resultEl.innerHTML = `
+      <div class="ani-result-grid">
+        <p><strong>최종 강화 단계</strong>: 30강</p>
+        <p><strong>총 시도 횟수</strong>: ${stats.total}회</p>
+        <p><strong>성공</strong>: ${stats.success}회</p>
+        <p><strong>실패</strong>: ${stats.fail}회</p>
+        <p><strong>하락</strong>: ${stats.down}회</p>
+        ${focusText}
+      </div>
+      <hr class="ani-divider">
+      <div class="ani-result-grid">
+        <p><strong>공</strong> ${optionCounts.atk}칸 합계값</strong>: ${optionValueSums.atk}</p>
+        <p><strong>속</strong> ${optionCounts.spd}칸 합계값</strong>: ${optionValueSums.spd}</p>
+        <p><strong>크</strong> ${optionCounts.crit}칸 합계값</strong>: ${optionValueSums.crit}</p>
+        <p><strong>방</strong> ${optionCounts.def}칸 합계값</strong>: ${optionValueSums.def}</p>
+        <p><strong>체</strong> ${optionCounts.hp}칸 합계값</strong>: ${optionValueSums.hp}</p>
+      </div>
+    `;
+  }
+
+  modeSelect.addEventListener('change', updateModeUI);
+  runBtn.addEventListener('click', () => {
+    const useFocus = modeSelect.value === 'focus';
+    const focusOption = useFocus ? focusOptionSelect.value : null;
+    const result = runAniEnhancementSimulation({ useFocus, focusOption });
+    renderResult(result);
+  });
+
+  updateModeUI();
+}
+
 // --- Characters ---
 function initCharacters() {
   const grid = document.getElementById('character-grid');
@@ -338,6 +393,7 @@ export function initUI() {
   initEfficiencyCalc();
   initSpeedCalc();
   initProbabilityCalc();
+  initAniEnhancementSimulator();
   initPositionTest();
   initCardSimulator();
   initCharacters();

@@ -256,6 +256,25 @@ body {
   color: #fff;
 }
 
+/* Ani Enhancement Simulator */
+.ani-result-box {
+  font-size: 0.95rem;
+}
+.ani-result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.45rem 0.8rem;
+}
+.ani-value-grid {
+  margin-top: 0.8rem;
+}
+.ani-divider {
+  border: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0.9rem 0;
+}
+
 /* Position Test */
 .question-card {
   padding: 1rem 0;
