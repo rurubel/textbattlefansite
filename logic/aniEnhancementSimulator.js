@@ -56,13 +56,24 @@ function chooseOptionOnSuccess(optionSlots, useFocus, focusOption) {
   const available = getAvailableOptions(optionSlots);
   if (available.length === 0) return null;
 
-  if (!useFocus || !focusOption || !available.includes(focusOption)) {
+  const canFocus =
+    useFocus &&
+    focusOption &&
+    optionSlots[focusOption].length < MAX_OPTION_SLOTS;
+
+  if (!canFocus) {
     return randomChoice(available);
   }
 
   const otherAvailable = available.filter((opt) => opt !== focusOption);
+
+  if (otherAvailable.length === 0) {
+    return focusOption;
+  }
+
   const roll = Math.random() * 100;
-  if (roll < 40 || otherAvailable.length === 0) {
+
+  if (roll < 40) {
     return focusOption;
   }
 

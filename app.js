@@ -1,10 +1,12 @@
 /**
  * Entry point - 텍스트배틀 팬사이트
  */
+
 import { initRouter, navigate } from './router.js';
 import { initUI } from './ui.js';
 
 function init() {
+  console.log("APP LOADED");
   const navButtons = document.querySelectorAll('.nav-btn');
   initRouter(navButtons, (section) => {
     // Optional: scroll to top or handle section-specific init
