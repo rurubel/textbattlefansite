@@ -7,17 +7,26 @@ import { initUI } from './ui.js';
 
 function init() {
   const navButtons = document.querySelectorAll('.nav-btn');
+
   initRouter(navButtons, (section) => {
-    // Optional: scroll to top or handle section-specific init
+    if (typeof gtag === 'function') {
+      gtag('event', 'view_section', {
+        section_name: section
+      });
+    }
   });
+
   initUI();
 
-  // Default to home
   const hash = window.location.hash.slice(1);
-  if (hash && document.getElementById(hash)) {
-    navigate(hash);
-  } else {
-    navigate('home');
+  const initialSection = (hash && document.getElementById(hash)) ? hash : 'home';
+
+  navigate(initialSection);
+
+  if (typeof gtag === 'function') {
+    gtag('event', 'view_section', {
+      section_name: initialSection
+    });
   }
 }
 

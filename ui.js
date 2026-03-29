@@ -387,7 +387,7 @@ function initAniEnhancementSimulator() {
 
     const pickaxeText = usePickaxe
       ? `
-        <p><strong>곡괭이 발동 옵션</strong>: ${pickaxeLabels || '없음'}</p>
+        <p><strong>곡괭이 사용 옵션</strong>: ${pickaxeLabels || '없음'}</p>
         <p><strong>곡괭이 사용 횟수</strong>: ${stats.pickaxeUsed}회</p>
       `
       : '';
