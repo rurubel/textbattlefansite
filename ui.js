@@ -522,17 +522,24 @@ if (firstBtn) firstBtn.classList.add('active');
 
 // --- Mobile menu ---
 function initMobileMenu() {
-  const btn = document.querySelector('.mobile-menu-btn');
-  const nav = document.querySelector('.nav');
-  if (btn && nav) {
-    btn.addEventListener('click', () => nav.classList.toggle('open'));
-  }
+  setTimeout(() => {
+    const btn = document.querySelector('.mobile-menu-btn');
+    const nav = document.querySelector('.nav');
+
+    if (btn && nav) {
+      btn.addEventListener('click', () => {
+        console.log('menu click'); // 디버그
+        nav.classList.toggle('open');
+      });
+    } else {
+      console.log('menu init fail', btn, nav);
+    }
+  }, 0);
 }
 
 const menu = document.getElementById('custom-menu');
 
 document.addEventListener('contextmenu', (e) => {
-  if ('ontouchstart' in window) return;
   e.preventDefault();
 
   const rect = menu.getBoundingClientRect();
