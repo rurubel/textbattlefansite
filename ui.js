@@ -12,7 +12,10 @@ import {
 } from './logic/probability.js';
 import { getQuestions, calculatePosition } from './logic/testLogic.js';
 import { characters } from './characters.js';
-import { runAniEnhancementSimulation } from './logic/aniEnhancementSimulator.js';
+import {
+  runAniEnhancementSimulation,
+  MAX_PICKAXE_TRIGGER_OPTIONS,
+} from './logic/aniEnhancementSimulator.js';
 
 const OPT_LABELS = { atk: '공', spd: '속', crit: '크', def: '방', hp: '체' };
 const GRADE_CLASSES = ['grade-white', 'grade-green', 'grade-blue', 'grade-purple', 'grade-yellow'];
@@ -236,9 +239,6 @@ function initPositionTest() {
     resultPosition.textContent = pos.name;
     resultAttributes.innerHTML = `
       <p>${pos.description}</p>
-      <ul>
-        ${pos.attributes.map((a) => `<li>${a}</li>`).join('')}
-      </ul>
     `;
     continueBtn.classList.toggle('hidden', answers.length >= qList.length);
   }
@@ -320,7 +320,7 @@ function initAniEnhancementSimulator() {
   const modeSelect = document.getElementById('ani-mode');
   const focusOptionSelect = document.getElementById('ani-focus-option');
   const pickaxeEnabled = document.getElementById('ani-pickaxe-enabled');
-  const pickaxeOptionSelect = document.getElementById('ani-pickaxe-option');
+  const pickaxeOptionsEl = document.getElementById('ani-pickaxe-options');
   const runBtn = document.getElementById('ani-run-btn');
   const resultEl = document.getElementById('ani-result');
 
@@ -328,18 +328,38 @@ function initAniEnhancementSimulator() {
     !modeSelect ||
     !focusOptionSelect ||
     !pickaxeEnabled ||
-    !pickaxeOptionSelect ||
+    !pickaxeOptionsEl ||
     !runBtn ||
     !resultEl
   ) {
     return;
   }
 
+  const pickaxeCheckboxes = pickaxeOptionsEl.querySelectorAll('input[type="checkbox"]');
+
   function updateModeUI() {
     const isFocus = modeSelect.value === 'focus';
     focusOptionSelect.disabled = !isFocus;
     const pickaxeOn = pickaxeEnabled.checked;
-    pickaxeOptionSelect.disabled = !pickaxeOn;
+    pickaxeCheckboxes.forEach((cb) => {
+      cb.disabled = false;
+    });
+    pickaxeEnabled.addEventListener('change', () => {
+      if (!pickaxeEnabled.checked) {
+        pickaxeCheckboxes.forEach(cb => cb.checked = false);
+      }
+      updateModeUI();
+    });
+  }
+
+  function onPickaxeCheckboxChange(e) {
+    if (e.target.checked) {
+      pickaxeEnabled.checked = true;
+    }
+    const checked = pickaxeOptionsEl.querySelectorAll('input[type="checkbox"]:checked');
+    if (checked.length > MAX_PICKAXE_TRIGGER_OPTIONS) {
+      e.target.checked = false;
+    }
   }
 
   function renderResult(result) {
@@ -350,7 +370,7 @@ function initAniEnhancementSimulator() {
       useFocus,
       focusOption,
       usePickaxe,
-      pickaxeTriggerOption,
+      pickaxeTriggerOptions,
     } = result;
     const focusText =
       useFocus && focusOption
@@ -360,17 +380,32 @@ function initAniEnhancementSimulator() {
       `
         : '';
 
-    const pickaxeText =
-      usePickaxe && pickaxeTriggerOption
-        ? `
-        <p><strong>곡괭이 발동 옵션</strong>: ${OPT_LABELS[pickaxeTriggerOption]}</p>
+    const pickaxeLabels =
+      usePickaxe && pickaxeTriggerOptions && pickaxeTriggerOptions.length
+        ? pickaxeTriggerOptions.map((o) => OPT_LABELS[o]).join(', ')
+        : '';
+
+    const pickaxeText = usePickaxe
+      ? `
+        <p><strong>곡괭이 발동 옵션</strong>: ${pickaxeLabels || '없음'}</p>
         <p><strong>곡괭이 사용 횟수</strong>: ${stats.pickaxeUsed}회</p>
       `
-        : '';
+      : '';
+    const statLines = [
+      { key: 'atk', label: '공' },
+      { key: 'spd', label: '속' },
+      { key: 'crit', label: '크' },
+      { key: 'def', label: '방' },
+      { key: 'hp', label: '체' },
+    ]
+      .filter(stat => optionValueSums[stat.key] > 0) // 🔥 핵심
+      .map(stat => `
+        <p><strong>${stat.label}</strong> (${optionCounts[stat.key]}칸) 합계값: ${optionValueSums[stat.key]}</p>
+      `)
+      .join('');
 
     resultEl.innerHTML = `
       <div class="ani-result-grid">
-        <p><strong>최종 강화 단계</strong>: 30강</p>
         <p><strong>총 시도 횟수</strong>: ${stats.total}회</p>
         <p><strong>성공</strong>: ${stats.success}회</p>
         <p><strong>실패</strong>: ${stats.fail}회</p>
@@ -380,27 +415,28 @@ function initAniEnhancementSimulator() {
       </div>
       <hr class="ani-divider">
       <div class="ani-result-grid">
-        <p><strong>공</strong> (${optionCounts.atk}칸) 합계값: ${optionValueSums.atk}</p>
-        <p><strong>속</strong> (${optionCounts.spd}칸) 합계값: ${optionValueSums.spd}</p>
-        <p><strong>크</strong> (${optionCounts.crit}칸) 합계값: ${optionValueSums.crit}</p>
-        <p><strong>방</strong> (${optionCounts.def}칸) 합계값: ${optionValueSums.def}</p>
-        <p><strong>체</strong> (${optionCounts.hp}칸) 합계값: ${optionValueSums.hp}</p>
+      ${statLines}
       </div>
     `;
   }
 
   modeSelect.addEventListener('change', updateModeUI);
   pickaxeEnabled.addEventListener('change', updateModeUI);
+  pickaxeCheckboxes.forEach((cb) => cb.addEventListener('change', onPickaxeCheckboxChange));
   runBtn.addEventListener('click', () => {
     const useFocus = modeSelect.value === 'focus';
     const focusOption = useFocus ? focusOptionSelect.value : null;
     const usePickaxe = pickaxeEnabled.checked;
-    const pickaxeTriggerOption = usePickaxe ? pickaxeOptionSelect.value : null;
+    const pickaxeTriggerOptions = usePickaxe
+      ? [...pickaxeOptionsEl.querySelectorAll('input[type="checkbox"]:checked')].map(
+          (el) => el.value
+        )
+      : [];
     const result = runAniEnhancementSimulation({
       useFocus,
       focusOption,
       usePickaxe,
-      pickaxeTriggerOption,
+      pickaxeTriggerOptions,
     });
     renderResult(result);
   });
@@ -410,8 +446,9 @@ function initAniEnhancementSimulator() {
 
 // --- Characters ---
 function initCharacters() {
+  let currentCharacter = null;
+   // 👈 각 캐릭터 이미지 개수 (수정 가능)
   const selector = document.getElementById('char-selector');
-
   const img = document.getElementById('char-img');
   const name = document.getElementById('char-name');
   const description = document.getElementById('char-description');
@@ -422,15 +459,29 @@ function initCharacters() {
   const basePath = 'assets/characters/';
 
   function renderCharacter(c) {
-    img.src = basePath + c.image;
+    currentCharacter = c;
+  
+    // 👉 기본 이미지는 1번
+    img.src = `${basePath}${c.id}/1.webp`;
+  
     name.textContent = c.name;
     line.textContent = c.line || '';
     description.textContent = c.description;
-
+  
     extra.innerHTML = (c.extra || [])
       .map(t => `<p>${t}</p>`)
       .join('');
   }
+
+  const randomBtn = document.getElementById('char-random-btn');
+
+  randomBtn.addEventListener('click', () => {
+    if (!currentCharacter) return;
+
+    const randomIndex = Math.floor(Math.random() * currentCharacter.imageCount) + 1;
+
+    img.src = `${basePath}${currentCharacter.id}/${randomIndex}.webp`;
+  });
 
   function renderSelector() {
     selector.innerHTML = characters.map(c => `

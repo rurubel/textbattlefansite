@@ -2,6 +2,8 @@ import { GRADE_VALUES, OPTION_TYPES } from './probability.js';
 
 const MAX_LEVEL = 30;
 const MAX_OPTION_SLOTS = 20;
+/** 곡괭이 자동 발동에 지정할 수 있는 옵션 수 상한 */
+export const MAX_PICKAXE_TRIGGER_OPTIONS = 3;
 
 const LEVEL_PROB_TABLE = [
   { success: 75, fail: 25, down: 0 },
@@ -116,12 +118,28 @@ function applyPopLastEnhancement(level, optionSlots, history) {
   return nextLevel;
 }
 
+function normalizePickaxeTriggerOptions(raw) {
+  if (!raw || !Array.isArray(raw)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const o of raw) {
+    if (!OPTION_TYPES.includes(o) || seen.has(o)) continue;
+    seen.add(o);
+    out.push(o);
+    if (out.length >= MAX_PICKAXE_TRIGGER_OPTIONS) break;
+  }
+  return out;
+}
+
 export function runAniEnhancementSimulation({
   useFocus = false,
   focusOption = null,
   usePickaxe = false,
-  pickaxeTriggerOption = null,
+  pickaxeTriggerOptions = null,
 } = {}) {
+  const pickaxeTriggers = normalizePickaxeTriggerOptions(pickaxeTriggerOptions);
+  const pickaxeTriggerSet = new Set(pickaxeTriggers);
+
   const optionSlots = createEmptySlots();
   const history = [];
   const stats = {
@@ -136,9 +154,7 @@ export function runAniEnhancementSimulation({
   let level = 0;
 
   const shouldAutoPickaxe = (option) =>
-    usePickaxe &&
-    pickaxeTriggerOption &&
-    option === pickaxeTriggerOption;
+    usePickaxe && pickaxeTriggerSet.has(option);
 
   while (level < MAX_LEVEL) {
     const result = rollEnhancementResult(level);
@@ -188,7 +204,7 @@ export function runAniEnhancementSimulation({
     useFocus,
     focusOption,
     usePickaxe,
-    pickaxeTriggerOption,
+    pickaxeTriggerOptions: pickaxeTriggers,
   };
 }
 

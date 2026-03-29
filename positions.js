@@ -128,7 +128,7 @@ export const positions = {
   non_tank: {
     id: 'non_tank',
     name: '논탱',
-    description: '방어력에서 비롯된 데미지 감소가 특징인 탱커',
+    description: '방어력을 중심으로 데미지를 감소시키는 탱커',
     attributes: [
       '좋음',
       '간단한 스탯',

@@ -199,15 +199,15 @@
             곡괭이 On/Off (선택한 옵션이 강화되면 즉시 곡괭이 사용)
           </label>
         </div>
-        <div class="form-group">
-          <label for="ani-pickaxe-option">곡괭이 발동 옵션</label>
-          <select id="ani-pickaxe-option" disabled>
-            <option value="atk">공</option>
-            <option value="spd">속</option>
-            <option value="crit">크</option>
-            <option value="def">방</option>
-            <option value="hp">체</option>
-          </select>
+        <div class="form-group" id="ani-pickaxe-options-group">
+          <span class="ani-pickaxe-options-label">곡괭이 발동 옵션 (최대 3개)</span>
+          <div class="ani-pickaxe-checks" id="ani-pickaxe-options">
+            <label class="ani-inline-check"><input type="checkbox" name="ani-pickaxe-opt" value="atk"> 공</label>
+            <label class="ani-inline-check"><input type="checkbox" name="ani-pickaxe-opt" value="spd"> 속</label>
+            <label class="ani-inline-check"><input type="checkbox" name="ani-pickaxe-opt" value="crit"> 크</label>
+            <label class="ani-inline-check"><input type="checkbox" name="ani-pickaxe-opt" value="def"> 방</label>
+            <label class="ani-inline-check"><input type="checkbox" name="ani-pickaxe-opt" value="hp"> 체</label>
+          </div>
         </div>
         <button type="button" class="btn btn-primary" id="ani-run-btn">0강 → 30강 시뮬레이션</button>
         <div class="result-box ani-result-box" id="ani-result">
@@ -274,6 +274,7 @@
         <div class="character-detail">
           <div class="char-detail-wrap">
             <img id="char-img" src="" alt="캐릭터">
+            
     
             <div class="char-info">
               <h3 id="char-name"></h3>
@@ -283,6 +284,9 @@
               <div class="char-extra" id="char-extra"></div>
             </div>
           </div>
+          <button class="btn btn-secondary" id="char-random-btn">
+            일러스트 변경
+          </button>
         </div>
     
       </div>
@@ -294,7 +298,7 @@
   </main>
 
   <footer class="footer">
-    <p>@TeamGurod · 텍스트배틀 팬사이트 · 컨늅 제작</p>
+    <p>모든 소스는 @TeamGurod · 텍스트배틀 팬사이트 · 컨늅 제작</p>
   </footer>
 
   <script type="module" src="app.js"></script>
