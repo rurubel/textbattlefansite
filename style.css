@@ -553,6 +553,9 @@ body {
   html {
     font-size: 12px;
   }
+  .card h2 {
+    font-size: 1.1rem;
+  }
   .header { padding: 1rem; }
   .nav {
     display: none;
