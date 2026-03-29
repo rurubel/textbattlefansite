@@ -447,7 +447,7 @@ function initAniEnhancementSimulator() {
 // --- Characters ---
 function initCharacters() {
   let currentCharacter = null;
-   // 👈 각 캐릭터 이미지 개수 (수정 가능)
+  let lastIndex = 1;
   const selector = document.getElementById('char-selector');
   const img = document.getElementById('char-img');
   const name = document.getElementById('char-name');
@@ -477,15 +477,21 @@ function initCharacters() {
 
   randomBtn.addEventListener('click', () => {
     if (!currentCharacter) return;
-
-    const randomIndex = Math.floor(Math.random() * currentCharacter.imageCount) + 1;
-
+  
+    let randomIndex;
+  
+    do {
+      randomIndex = Math.floor(Math.random() * currentCharacter.imageCount) + 1;
+    } while (randomIndex === lastIndex);
+  
+    lastIndex = randomIndex;
+  
     img.src = `${basePath}${currentCharacter.id}/${randomIndex}.webp`;
   });
 
   function renderSelector() {
     selector.innerHTML = characters.map(c => `
-      <button class="btn btn-secondary" data-id="${c.id}">
+      <button class="btn btn-secondary char-btn" data-id="${c.id}">
         ${c.name}
       </button>
     `).join('');

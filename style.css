@@ -398,6 +398,11 @@ body {
   max-width: 400px;
   margin: 0 auto;
 }
+.char-btn {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+}
 .sim-card-header {
   color: #ebb30b !important;
   font-size: 1.2rem;
@@ -567,6 +572,14 @@ body {
   }
   .char-detail-wrap img {
     width: 140px;
+  }
+  .sim-card-header {
+    -webkit-text-stroke: 0;
+    text-stroke: 0;
+  }
+  .char-btn {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
   }
 }
 
