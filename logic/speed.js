@@ -8,6 +8,15 @@ export function calculateSpeed(agility, speedSubOpt, conversionValue) {
 }
 
 export function getFirstStrikeDetail(myAgi, mySpd, enemyAgi, enemySpd, conversion) {
+  // ✅ 입력 안 한 상태 (전부 0)
+  if (
+    myAgi === 0 &&
+    mySpd === 0 &&
+    enemyAgi === 0 &&
+    enemySpd === 0
+  ) {
+    return '값을 입력하세요';
+  }
   const mySpeed = calculateSpeed(myAgi, mySpd, conversion);
   const enemySpeed = calculateSpeed(enemyAgi, enemySpd, conversion);
 

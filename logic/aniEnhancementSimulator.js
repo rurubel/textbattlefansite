@@ -106,7 +106,22 @@ function sumOptionValues(optionSlots) {
   }, {});
 }
 
-export function runAniEnhancementSimulation({ useFocus = false, focusOption = null } = {}) {
+/** 하락과 동일: 단계 -1, 히스토리/pop으로 마지막 강화 슬롯 제거 */
+function applyPopLastEnhancement(level, optionSlots, history) {
+  const nextLevel = Math.max(0, level - 1);
+  const lastOption = history.pop();
+  if (lastOption) {
+    optionSlots[lastOption].pop();
+  }
+  return nextLevel;
+}
+
+export function runAniEnhancementSimulation({
+  useFocus = false,
+  focusOption = null,
+  usePickaxe = false,
+  pickaxeTriggerOption = null,
+} = {}) {
   const optionSlots = createEmptySlots();
   const history = [];
   const stats = {
@@ -115,9 +130,15 @@ export function runAniEnhancementSimulation({ useFocus = false, focusOption = nu
     fail: 0,
     down: 0,
     focusHit: 0,
+    pickaxeUsed: 0,
   };
 
   let level = 0;
+
+  const shouldAutoPickaxe = (option) =>
+    usePickaxe &&
+    pickaxeTriggerOption &&
+    option === pickaxeTriggerOption;
 
   while (level < MAX_LEVEL) {
     const result = rollEnhancementResult(level);
@@ -137,7 +158,10 @@ export function runAniEnhancementSimulation({ useFocus = false, focusOption = nu
       optionSlots[targetOption].push(item);
       history.push(targetOption);
 
-      if (useFocus && focusOption && targetOption === focusOption) {
+      if (shouldAutoPickaxe(targetOption)) {
+        level = applyPopLastEnhancement(level, optionSlots, history);
+        stats.pickaxeUsed += 1;
+      } else if (useFocus && focusOption && targetOption === focusOption) {
         stats.focusHit += 1;
       }
       continue;
@@ -149,11 +173,7 @@ export function runAniEnhancementSimulation({ useFocus = false, focusOption = nu
     }
 
     stats.down += 1;
-    level = Math.max(0, level - 1);
-
-    const lastOption = history.pop();
-    if (!lastOption) continue;
-    optionSlots[lastOption].pop();
+    level = applyPopLastEnhancement(level, optionSlots, history);
   }
 
   return {
@@ -167,6 +187,8 @@ export function runAniEnhancementSimulation({ useFocus = false, focusOption = nu
     stats,
     useFocus,
     focusOption,
+    usePickaxe,
+    pickaxeTriggerOption,
   };
 }
 

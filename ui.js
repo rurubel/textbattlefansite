@@ -98,10 +98,19 @@ function initProbabilityCalc() {
   }
 
   addBtn.addEventListener('click', () => {
-    if (currentSubs.length >= 4) return;
+    const star = parseInt(targetStar.value, 10) || 5;
+  
+    // ✅ 목표 성급 이상이면 추가 금지
+    if (currentSubs.length >= star-1) {
+      resultEl.textContent = `부옵을 목표 성급과 같거나 높게 추가할 수 없습니다.`;
+      resultEl.classList.add('error');
+      return;
+    }
+  
     const type = optType.value;
     const g = parseInt(grade.value, 10);
     const val = GRADE_VALUES[type][g];
+  
     currentSubs.push({ type, grade: g, value: val });
     renderSubList();
   });
@@ -310,24 +319,54 @@ function initCardSimulator() {
 function initAniEnhancementSimulator() {
   const modeSelect = document.getElementById('ani-mode');
   const focusOptionSelect = document.getElementById('ani-focus-option');
+  const pickaxeEnabled = document.getElementById('ani-pickaxe-enabled');
+  const pickaxeOptionSelect = document.getElementById('ani-pickaxe-option');
   const runBtn = document.getElementById('ani-run-btn');
   const resultEl = document.getElementById('ani-result');
 
-  if (!modeSelect || !focusOptionSelect || !runBtn || !resultEl) return;
+  if (
+    !modeSelect ||
+    !focusOptionSelect ||
+    !pickaxeEnabled ||
+    !pickaxeOptionSelect ||
+    !runBtn ||
+    !resultEl
+  ) {
+    return;
+  }
 
   function updateModeUI() {
     const isFocus = modeSelect.value === 'focus';
     focusOptionSelect.disabled = !isFocus;
+    const pickaxeOn = pickaxeEnabled.checked;
+    pickaxeOptionSelect.disabled = !pickaxeOn;
   }
 
   function renderResult(result) {
-    const { stats, optionCounts, optionValueSums, useFocus, focusOption } = result;
-    const focusText = useFocus && focusOption
-      ? `
+    const {
+      stats,
+      optionCounts,
+      optionValueSums,
+      useFocus,
+      focusOption,
+      usePickaxe,
+      pickaxeTriggerOption,
+    } = result;
+    const focusText =
+      useFocus && focusOption
+        ? `
         <p><strong>집중 강화 옵션</strong>: ${OPT_LABELS[focusOption]}</p>
         <p><strong>집중 강화 옵션 강화 횟수</strong>: ${stats.focusHit}회</p>
       `
-      : '';
+        : '';
+
+    const pickaxeText =
+      usePickaxe && pickaxeTriggerOption
+        ? `
+        <p><strong>곡괭이 발동 옵션</strong>: ${OPT_LABELS[pickaxeTriggerOption]}</p>
+        <p><strong>곡괭이 사용 횟수</strong>: ${stats.pickaxeUsed}회</p>
+      `
+        : '';
 
     resultEl.innerHTML = `
       <div class="ani-result-grid">
@@ -337,23 +376,32 @@ function initAniEnhancementSimulator() {
         <p><strong>실패</strong>: ${stats.fail}회</p>
         <p><strong>하락</strong>: ${stats.down}회</p>
         ${focusText}
+        ${pickaxeText}
       </div>
       <hr class="ani-divider">
       <div class="ani-result-grid">
-        <p><strong>공</strong> ${optionCounts.atk}칸 합계값</strong>: ${optionValueSums.atk}</p>
-        <p><strong>속</strong> ${optionCounts.spd}칸 합계값</strong>: ${optionValueSums.spd}</p>
-        <p><strong>크</strong> ${optionCounts.crit}칸 합계값</strong>: ${optionValueSums.crit}</p>
-        <p><strong>방</strong> ${optionCounts.def}칸 합계값</strong>: ${optionValueSums.def}</p>
-        <p><strong>체</strong> ${optionCounts.hp}칸 합계값</strong>: ${optionValueSums.hp}</p>
+        <p><strong>공</strong> (${optionCounts.atk}칸) 합계값: ${optionValueSums.atk}</p>
+        <p><strong>속</strong> (${optionCounts.spd}칸) 합계값: ${optionValueSums.spd}</p>
+        <p><strong>크</strong> (${optionCounts.crit}칸) 합계값: ${optionValueSums.crit}</p>
+        <p><strong>방</strong> (${optionCounts.def}칸) 합계값: ${optionValueSums.def}</p>
+        <p><strong>체</strong> (${optionCounts.hp}칸) 합계값: ${optionValueSums.hp}</p>
       </div>
     `;
   }
 
   modeSelect.addEventListener('change', updateModeUI);
+  pickaxeEnabled.addEventListener('change', updateModeUI);
   runBtn.addEventListener('click', () => {
     const useFocus = modeSelect.value === 'focus';
     const focusOption = useFocus ? focusOptionSelect.value : null;
-    const result = runAniEnhancementSimulation({ useFocus, focusOption });
+    const usePickaxe = pickaxeEnabled.checked;
+    const pickaxeTriggerOption = usePickaxe ? pickaxeOptionSelect.value : null;
+    const result = runAniEnhancementSimulation({
+      useFocus,
+      focusOption,
+      usePickaxe,
+      pickaxeTriggerOption,
+    });
     renderResult(result);
   });
 
