@@ -446,7 +446,7 @@ function initAniEnhancementSimulator() {
 
 // --- Characters ---
 function initCharacters() {
-  let currentCharacter = null;
+  let currentIndex = 1;
   let lastIndex = 1;
   const selector = document.getElementById('char-selector');
   const img = document.getElementById('char-img');
@@ -461,8 +461,8 @@ function initCharacters() {
   function renderCharacter(c) {
     currentCharacter = c;
   
-    // 👉 기본 이미지는 1번
-    img.src = `${basePath}${c.id}/1.webp`;
+    currentIndex = 1; // 👈 항상 1부터 시작
+    img.src = `${basePath}${c.id}/${currentIndex}.webp`;
   
     name.textContent = c.name;
     line.textContent = c.line || '';
@@ -478,15 +478,14 @@ function initCharacters() {
   randomBtn.addEventListener('click', () => {
     if (!currentCharacter) return;
   
-    let randomIndex;
+    currentIndex++;
   
-    do {
-      randomIndex = Math.floor(Math.random() * currentCharacter.imageCount) + 1;
-    } while (randomIndex === lastIndex);
+    // 👇 마지막 넘으면 다시 1로
+    if (currentIndex > currentCharacter.imageCount) {
+      currentIndex = 1;
+    }
   
-    lastIndex = randomIndex;
-  
-    img.src = `${basePath}${currentCharacter.id}/${randomIndex}.webp`;
+    img.src = `${basePath}${currentCharacter.id}/${currentIndex}.webp`;
   });
 
   function renderSelector() {
