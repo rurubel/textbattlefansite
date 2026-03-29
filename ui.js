@@ -532,6 +532,7 @@ function initMobileMenu() {
 const menu = document.getElementById('custom-menu');
 
 document.addEventListener('contextmenu', (e) => {
+  if ('ontouchstart' in window) return;
   e.preventDefault();
 
   const rect = menu.getBoundingClientRect();

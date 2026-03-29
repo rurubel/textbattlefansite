@@ -6,10 +6,6 @@ import { initRouter, navigate } from './router.js';
 import { initUI } from './ui.js';
 
 function init() {
-  document.querySelector('.mobile-menu-btn')
-  .addEventListener('click', () => {
-    document.querySelector('.nav').classList.toggle('open');
-  });
   const navButtons = document.querySelectorAll('.nav-btn');
   initRouter(navButtons, (section) => {
     // Optional: scroll to top or handle section-specific init
