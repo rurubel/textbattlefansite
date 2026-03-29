@@ -564,22 +564,27 @@ body {
   .main { padding: 1rem; }
   .form-row { grid-template-columns: 1fr; }
   .sub-add-form { flex-direction: column; align-items: stretch; }
-  .card h2,
-  .card h3 {
-    -webkit-text-stroke: 0;
-    text-stroke: 0;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
-  }
   .char-detail-wrap img {
     width: 140px;
-  }
-  .sim-card-header {
-    -webkit-text-stroke: 0;
-    text-stroke: 0;
   }
   .char-btn {
     padding: 0.4rem 0.7rem;
     font-size: 0.75rem;
+  }
+  .card h2,
+  .card h3,
+  .logo,
+  .question-number,
+  .result-position,
+  .sim-card-header,
+  .character-card h4 {
+    -webkit-text-stroke: 0 !important;
+    text-stroke: 0 !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  }
+  body {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 }
 
