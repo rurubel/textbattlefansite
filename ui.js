@@ -392,17 +392,18 @@ function initAniEnhancementSimulator() {
       `
       : '';
     const statLines = [
-      { key: 'atk', label: '공' },
-      { key: 'spd', label: '속' },
-      { key: 'crit', label: '크' },
-      { key: 'def', label: '방' },
-      { key: 'hp', label: '체' },
-    ]
-      .filter(stat => optionValueSums[stat.key] > 0) // 🔥 핵심
-      .map(stat => `
-        <p><strong>${stat.label}</strong> (${optionCounts[stat.key]}칸) 합계값: ${optionValueSums[stat.key]}</p>
-      `)
-      .join('');
+    { key: 'atk', label: '공' },
+    { key: 'spd', label: '속' },
+    { key: 'crit', label: '크' },
+    { key: 'def', label: '방' },
+    { key: 'hp', label: '체' },
+  ]
+    .filter(stat => optionValueSums[stat.key] > 0)
+    .sort((a, b) => optionValueSums[b.key] - optionValueSums[a.key]) // 🔥 핵심: 내림차순 정렬
+    .map(stat => `
+      <p><strong>${stat.label}</strong> (${optionCounts[stat.key]}칸) 합계값: ${optionValueSums[stat.key]}</p>
+    `)
+    .join('');
 
     resultEl.innerHTML = `
       <div class="ani-result-grid">
