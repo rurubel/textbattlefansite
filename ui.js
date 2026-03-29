@@ -447,6 +447,7 @@ function initAniEnhancementSimulator() {
 // --- Characters ---
 function initCharacters() {
   let currentIndex = 1;
+  let currentCharacter = null;
   let lastIndex = 1;
   const selector = document.getElementById('char-selector');
   const img = document.getElementById('char-img');
