@@ -107,6 +107,10 @@ function initProbabilityCalc() {
   });
 
   calcBtn.addEventListener('click', () => {
+    if (currentSubs.length === 0) {
+      resultEl.textContent = '계산을 원하시는 카드의 부옵을 추가 해주세요';
+      return;
+    }
     resultEl.textContent = '계산 중...';
     resultEl.classList.remove('error');
   
@@ -358,26 +362,57 @@ function initAniEnhancementSimulator() {
 
 // --- Characters ---
 function initCharacters() {
-  const grid = document.getElementById('character-grid');
+  const selector = document.getElementById('char-selector');
+
+  const img = document.getElementById('char-img');
+  const name = document.getElementById('char-name');
+  const description = document.getElementById('char-description');
+  const line = document.getElementById('char-line');
+  const story = document.getElementById('char-story');
+  const extra = document.getElementById('char-extra');
+
   const basePath = 'assets/characters/';
 
-  function render() {
-    grid.innerHTML = characters
-      .map(
-        (c) => `
-      <div class="character-card">
-        <img src="${basePath}${c.image}" alt="${c.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23333%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2250%22 fill=%22%23666%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22>${encodeURIComponent(c.name)}</text></svg>'">
-        <div class="char-info">
-          <h4>${c.name}</h4>
-          <p>${c.description}</p>
-        </div>
-      </div>
-    `
-      )
+  function renderCharacter(c) {
+    img.src = basePath + c.image;
+    name.textContent = c.name;
+    line.textContent = c.line || '';
+    description.textContent = c.description;
+
+    extra.innerHTML = (c.extra || [])
+      .map(t => `<p>${t}</p>`)
       .join('');
   }
 
-  render();
+  function renderSelector() {
+    selector.innerHTML = characters.map(c => `
+      <button class="btn btn-secondary" data-id="${c.id}">
+        ${c.name}
+      </button>
+    `).join('');
+
+    selector.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const c = characters.find(x => x.id === id);
+    
+        // ✅ 기존 active 제거
+        selector.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    
+        // ✅ 클릭한 버튼에 active 추가
+        btn.classList.add('active');
+    
+        // 캐릭터 렌더링
+        renderCharacter(c);
+      });
+    });
+  }
+
+  renderSelector();
+  renderCharacter(characters[0]); // 첫 캐릭터 기본 표시
+
+  const firstBtn = selector.querySelector('button');
+if (firstBtn) firstBtn.classList.add('active');
 }
 
 // --- Mobile menu ---
@@ -388,6 +423,69 @@ function initMobileMenu() {
     btn.addEventListener('click', () => nav.classList.toggle('open'));
   }
 }
+
+const menu = document.getElementById('custom-menu');
+
+document.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+
+  const rect = menu.getBoundingClientRect();
+  const menuWidth = rect.width;
+  const menuHeight = rect.height;
+
+  const isRightSide = e.clientX > window.innerWidth / 2;
+
+  let x;
+  let y;
+
+  // 👉 좌우 방향 결정
+  if (isRightSide) {
+    // 오른쪽 클릭 → 왼쪽에 표시
+    x = e.pageX - menuWidth;
+  } else {
+    // 왼쪽 클릭 → 오른쪽에 표시
+    x = e.pageX;
+  }
+
+  // 👉 아래로 넘치면 위로
+  if (e.clientY > window.innerHeight / 2) {
+    y = e.pageY - menuHeight;
+  } else {
+    y = e.pageY;
+  }
+
+  // 👉 화면 밖 방지 (보정)
+  x = Math.max(0, Math.min(x, window.innerWidth - menuWidth));
+  y = Math.max(0, Math.min(y, window.innerHeight - menuHeight));
+
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+
+  menu.classList.remove('hidden');
+});
+
+// 클릭하면 닫기
+document.addEventListener('click', () => {
+  menu.classList.add('hidden');
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    menu.classList.add('hidden');
+  }
+});
+
+// 탭 이동 / 최소화
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    menu.classList.add('hidden');
+  }
+});
+
+// 다른 프로그램 클릭
+window.addEventListener('blur', () => {
+  menu.classList.add('hidden');
+});
 
 export function initUI() {
   initEfficiencyCalc();

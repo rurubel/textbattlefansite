@@ -26,29 +26,38 @@
     <!-- Home Section -->
     <section id="home" class="section active">
       <div class="card">
-        <h2>텍스트배틀</h2>
+        <h2>텍스트배틀 팬사이트에 오신 것을 환영합니다!</h2>
         <ul>
-          <li>AI 기반 캐릭터 생성</li>
-          <li>1vs1 전투</li>
-          <li>서로의 2번 공격 후 체력으로 승부</li>
+          <li>텍스트배틀 플레이 하러 가기 : <a href=https://battle.logbrix.ai>https://battle.logbrix.ai</a></li>
         </ul>
       </div>
       <div class="card">
-        <h2>카드 시스템</h2>
+        <h2>텍스트배틀이란?</h2>
         <ul>
-          <li>1~5성</li>
-          <li>주옵 1개 + 성급만큼 부옵</li>
-          <li>옵션 종류: 공, 속, 크, 방, 체</li>
-          <li>부옵 등급: 흰, 초, 파, 보, 황 (모두 랜덤)</li>
+          <li>나만의 아이디어로 ai가 캐릭터를 만든다!</li>
+          <li>내가 만든 캐릭터로 다른 캐릭터와 전투하는 AI 멀티 모달 캐릭터 PVP RPG 게임!</li>
+          <li>지원 전투 : 1vs1, 3vs3, 보스전, 서버 통합 레이드</li>
         </ul>
       </div>
       <div class="card">
-        <h2>효율</h2>
-        <p>효율 = 공×2 + 방×2 + 체</p>
+        <h2>텍스트배틀 팬사이트 지원 기능</h2>
+        <ul>
+          <li>가능성 계산기 : 현재 부옵을 입력하면 이 카드가 목표 효율에 도달할 확률 계산</li>
+          <li>애니 강화 시뮬레이터 : 일반 강화, 집중 강화로 30강 애니를 뽑는 시뮬레이터</li>
+          <li>효율 계산기 : 카드 + 애니의 성능을 확인하는 지표인 효율을 계산</li>
+          <li>선공 계산기 : 나와 상대 중 누가 선공인지 계산</li>
+          <li>포지션 성향 테스트 : 나에게 딱 맞는 포지션 추천</li>
+          <li>카드 시뮬레이터 : 5성 카드를 뽑는 시뮬레이터</li>
+          <li>개발자 캐릭터 소개 : 컨늅 패밀리 소개☺️</li>
+        </ul>
       </div>
       <div class="card">
-        <h2>선공</h2>
-        <p>선공 = 민첩성 + (속부옵 × 변환값)</p>
+        <h2>안내</h2>
+        <ul>
+          <li>@TeamGurod 해당 사이트는 TeamGurod, logbrix.Textbattle의 공식사이트가 아닙니다!</li>
+          <li>모든 리소스는 게임 텍스트배틀을 제작한 TeamGurod에게 있습니다!</li>
+          <li>Artist : 컨늅</li>
+        </ul>
       </div>
     </section>
 
@@ -241,18 +250,37 @@
     <section id="characters" class="section">
       <div class="card">
         <h2>캐릭터 소개</h2>
-        <div id="character-grid" class="character-grid"></div>
+    
+        <!-- 캐릭터 선택 버튼 -->
+        <div class="char-selector" id="char-selector"></div>
+    
+        <!-- 상세 페이지 -->
+        <div class="character-detail">
+          <div class="char-detail-wrap">
+            <img id="char-img" src="" alt="캐릭터">
+    
+            <div class="char-info">
+              <h3 id="char-name"></h3>
+    
+              <div class="char-line" id="char-line"></div>
+              <div class="char-description" id="char-description"></div>
+              <div class="char-extra" id="char-extra"></div>
+            </div>
+          </div>
+        </div>
+    
       </div>
     </section>
+    <div id="custom-menu" class="custom-menu hidden">
+      <button>으에에엥</button>
+      <button>우클릭 네르지 마세요!</button>
+    </div>
   </main>
 
   <footer class="footer">
-    <p>텍스트배틀 팬ddd · 정적 사이트 · GitHub Pages</p>
+    <p>@TeamGurod · 텍스트배틀 팬사이트 · 컨늅 제작</p>
   </footer>
 
   <script type="module" src="app.js"></script>
-  <script>
-    console.log("html inline script works");
-  </script>
 </body>
 </html>
