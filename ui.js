@@ -9,6 +9,7 @@ import {
   GRADE_NAMES,
   GRADE_VALUES,
   OPTION_TYPES,
+  getRandomGrade
 } from './logic/probability.js';
 import { getQuestions, calculatePosition } from './logic/testLogic.js';
 import { characters } from './characters.js';
@@ -153,11 +154,21 @@ function initProbabilityCalc() {
           finalP = 0;
         }
   
-        const pct = finalP === 0
-          ? '0'
-          : finalP < 0.01
-            ? (finalP * 100).toFixed(8)
-            : (finalP * 100).toFixed(2);
+        function formatPercent(p) {
+          if (p === 0) return '0';
+        
+          const percent = p * 100;
+        
+          // 작은 값은 정밀하게, 대신 불필요한 0 제거
+          if (percent < 1) {
+            return parseFloat(percent.toFixed(8)).toString();
+          }
+        
+          // 일반 값은 2자리까지만
+          return parseFloat(percent.toFixed(2)).toString();
+        }
+        
+        const pct = formatPercent(finalP);
   
         resultEl.textContent = `목표 효율 ${eff} 달성 확률: ${pct}%`;
   
@@ -292,7 +303,7 @@ function initCardSimulator() {
     const types = ['atk', 'spd', 'crit', 'def', 'hp'];
     const grades = [0, 1, 2, 3, 4];
     const type = types[Math.floor(Math.random() * 5)];
-    const grade = grades[Math.floor(Math.random() * 5)];
+    const grade = getRandomGrade();
     const value = GRADE_VALUES[type][grade];
     return { type, grade, value };
   }

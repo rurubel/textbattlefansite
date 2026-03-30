@@ -6,6 +6,7 @@
 
 const OPTION_TYPES = ['atk', 'spd', 'crit', 'def', 'hp'];
 const GRADE_NAMES = ['흰', '초', '파', '보', '황'];
+const GRADE_PROB = [0.40, 0.25, 0.20, 0.10, 0.05];
 
 // Grade to value range [min, max] for each stat
 const GRADE_VALUES = {
@@ -16,13 +17,6 @@ const GRADE_VALUES = {
   hp: { 0: 2, 1: 3, 2: 5, 3: 6, 4: 8 },
 };
 
-function randomSubOption() {
-  const optType = OPTION_TYPES[Math.floor(Math.random() * 5)];
-  const grade = Math.floor(Math.random() * 5);
-  const value = GRADE_VALUES[optType][grade];
-  return { type: optType, grade, value };
-}
-
 function subToStats(subs) {
   const stats = { atk: 0, def: 0, hp: 0 };
   for (const sub of subs) {
@@ -31,6 +25,27 @@ function subToStats(subs) {
     }
   }
   return stats;
+}
+
+function getRandomGrade() {
+  const r = Math.random();
+  let cumulative = 0;
+
+  for (let i = 0; i < GRADE_PROB.length; i++) {
+    cumulative += GRADE_PROB[i];
+    if (r < cumulative) {
+      return i;
+    }
+  }
+
+  return GRADE_PROB.length - 1; // fallback
+}
+
+function randomSubOption() {
+  const optType = OPTION_TYPES[Math.floor(Math.random() * 5)];
+  const grade = getRandomGrade(); // 🔥 변경
+  const value = GRADE_VALUES[optType][grade];
+  return { type: optType, grade, value };
 }
 
 export function calculateEfficiencyFromSubs(subs) {
@@ -64,4 +79,4 @@ export function formatProbability(p) {
   return Math.round(p * 100) / 100;
 }
 
-export { GRADE_NAMES, OPTION_TYPES, GRADE_VALUES };
+export { GRADE_NAMES, OPTION_TYPES, GRADE_VALUES, GRADE_PROB, getRandomGrade };
