@@ -59,14 +59,38 @@ export function getBattleModifiers(myAttrId, oppAttrId) {
   };
 }
 
+/** 보정 후 값, 소수 둘째 자리까지 반올림 */
 export function applyAttributePercent(value, percent) {
-  return Math.round(Number(value) * (1 + percent / 100));
+  const raw = Number(value) * (1 + percent / 100);
+  return Math.round(raw * 100) / 100;
+}
+
+/** 결과 표시용 (항상 소수 둘째 자리) */
+export function formatAttributeCalcDecimal(n) {
+  if (!Number.isFinite(n)) return '';
+  return (Math.round(n * 100) / 100).toFixed(2);
 }
 
 export function formatSignedPercent(percent) {
   if (percent > 0) return `+${percent}%`;
   if (percent < 0) return `${percent}%`;
   return '0%';
+}
+
+/**
+ * 보정율 절댓값 기준: 0 → 경합, 3 → 약열세, 6·10 → 열세 (게임 상성 단계명).
+ * @param {number} percent 나(또는 상대)에게 적용되는 보정 %
+ * @param {'player' | 'opponent'} who
+ * @returns {string | null} 알 수 없는 크기면 null
+ */
+export function getAttributeStanceSentence(percent, who) {
+  const isPlayer = who === 'player';
+  const topic = isPlayer ? '당신은' : '상대는';
+  const a = Math.abs(percent);
+  if (a === 0) return `${topic} 경합입니다.`;
+  if (a === 3) return `${topic} 약열세입니다.`;
+  if (a === 6 || a === 10) return `${topic} 열세입니다.`;
+  return null;
 }
 
 /**
@@ -84,26 +108,12 @@ export function parseOptionalNumber(raw) {
  * @returns {{ ok: true } | { ok: false, message: string }}
  */
 export function validateAttributeCalcInput(input) {
-  const { myAttr, oppAttr, myHp, myDmg, oppHp, oppDmg } = input;
+  const { myAttr, oppAttr } = input;
 
   if (!isValidAttrId(myAttr) || !isValidAttrId(oppAttr)) {
     return {
       ok: false,
-      message:
-        '나의 속성과 상대의 속성을 모두 선택해 주세요.',
-    };
-  }
-
-  const hasMyPair = myHp !== null && myDmg !== null;
-  const hasOppPair = oppHp !== null && oppDmg !== null;
-  const bothHp = myHp !== null && oppHp !== null;
-  const bothAtk = myDmg !== null && oppDmg !== null;
-
-  if (!(hasMyPair || hasOppPair || bothHp || bothAtk)) {
-    return {
-      ok: false,
-      message:
-        '최소 한 쌍의 체력·평타 데미지 조건을 충족해야 합니다. (나 체+나 평타, 상대 체+상대 평타, 나 체+상대 체, 나 평타+상대 평타 중 하나)',
+      message: '나와 상대의 속성을 모두 입력해주세요.',
     };
   }
 
@@ -112,42 +122,34 @@ export function validateAttributeCalcInput(input) {
 
 /**
  * @param {{ myAttr: string, oppAttr: string, myHp: number | null, myDmg: number | null, oppHp: number | null, oppDmg: number | null }} input
- * @returns {{ myPercent: number, oppPercent: number, lines: { label: string, before: number, after: number }[] }}
+ * @returns {{ myPercent: number, oppPercent: number, lines: { label: string, before: number | null, after: number | null }[] }}
  */
 export function computeAttributeCalc(input) {
   const { myAttr, oppAttr, myHp, myDmg, oppHp, oppDmg } = input;
   const { myPercent, oppPercent } = getBattleModifiers(myAttr, oppAttr);
-  /** @type {{ label: string, before: number, after: number }[]} */
-  const lines = [];
 
-  if (myDmg !== null) {
-    lines.push({
+  const lines = [
+    {
       label: '나의 평타 데미지',
       before: myDmg,
-      after: applyAttributePercent(myDmg, myPercent),
-    });
-  }
-  if (myHp !== null) {
-    lines.push({
+      after: myDmg === null ? null : applyAttributePercent(myDmg, myPercent),
+    },
+    {
       label: '나의 체력',
       before: myHp,
-      after: applyAttributePercent(myHp, myPercent),
-    });
-  }
-  if (oppDmg !== null) {
-    lines.push({
+      after: myHp === null ? null : applyAttributePercent(myHp, myPercent),
+    },
+    {
       label: '상대의 평타 데미지',
       before: oppDmg,
-      after: applyAttributePercent(oppDmg, oppPercent),
-    });
-  }
-  if (oppHp !== null) {
-    lines.push({
+      after: oppDmg === null ? null : applyAttributePercent(oppDmg, oppPercent),
+    },
+    {
       label: '상대의 체력',
       before: oppHp,
-      after: applyAttributePercent(oppHp, oppPercent),
-    });
-  }
+      after: oppHp === null ? null : applyAttributePercent(oppHp, oppPercent),
+    },
+  ];
 
   return { myPercent, oppPercent, lines };
 }

@@ -25,6 +25,8 @@ import {
   computeAttributeCalc,
   formatSignedPercent,
   getModifierPercent,
+  getAttributeStanceSentence,
+  formatAttributeCalcDecimal,
 } from './logic/attributeCompatibility.js';
 
 const OPT_LABELS = { atk: '공', spd: '속', crit: '크', def: '방', hp: '체' };
@@ -634,20 +636,32 @@ function initAttributeCalculator() {
     );
     frag.appendChild(summary);
 
-    if (lines.length === 0) {
-      const p = document.createElement('p');
-      p.textContent = '표시할 스탯이 없습니다. 체력 또는 평타 데미지를 하나 이상 입력하세요.';
-      frag.appendChild(p);
-    } else {
-      const ul = document.createElement('ul');
-      ul.className = 'attr-calc-result-list';
-      lines.forEach(({ label, before, after }) => {
-        const li = document.createElement('li');
-        li.textContent = `${label}: ${before} → ${after} (보정 후)`;
-        ul.appendChild(li);
-      });
-      frag.appendChild(ul);
-    }
+    const stanceP1 = document.createElement('p');
+    stanceP1.className = 'attr-calc-stance';
+    stanceP1.textContent =
+      getAttributeStanceSentence(myPercent, 'player') ??
+      `당신 쪽 상성 보정은 ${formatSignedPercent(myPercent)}입니다.`;
+    frag.appendChild(stanceP1);
+
+    const stanceP2 = document.createElement('p');
+    stanceP2.className = 'attr-calc-stance';
+    stanceP2.textContent =
+      getAttributeStanceSentence(oppPercent, 'opponent') ??
+      `상대 쪽 상성 보정은 ${formatSignedPercent(oppPercent)}입니다.`;
+    frag.appendChild(stanceP2);
+
+    const ul = document.createElement('ul');
+    ul.className = 'attr-calc-result-list';
+    lines.forEach(({ label, before, after }) => {
+      const li = document.createElement('li');
+      if (before === null) {
+        li.textContent = `${label}: (작성하지 않음)`;
+      } else {
+        li.textContent = `${label}: ${formatAttributeCalcDecimal(before)} → ${formatAttributeCalcDecimal(after)} (보정 후)`;
+      }
+      ul.appendChild(li);
+    });
+    frag.appendChild(ul);
 
     resultEl.innerHTML = '';
     resultEl.appendChild(frag);
