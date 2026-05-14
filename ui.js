@@ -17,6 +17,15 @@ import {
   runAniEnhancementSimulation,
   MAX_PICKAXE_TRIGGER_OPTIONS,
 } from './logic/aniEnhancementSimulator.js';
+import {
+  ATTR_IDS,
+  ATTR_LABELS,
+  parseOptionalNumber,
+  validateAttributeCalcInput,
+  computeAttributeCalc,
+  formatSignedPercent,
+  getModifierPercent,
+} from './logic/attributeCompatibility.js';
 
 const OPT_LABELS = { atk: '공', spd: '속', crit: '크', def: '방', hp: '체' };
 const GRADE_CLASSES = ['grade-white', 'grade-green', 'grade-blue', 'grade-purple', 'grade-yellow'];
@@ -532,6 +541,119 @@ function initCharacters() {
 if (firstBtn) firstBtn.classList.add('active');
 }
 
+// --- Attribute compatibility calculator ---
+function renderAttributeMatrix(container) {
+  container.innerHTML = '';
+  const table = document.createElement('table');
+  table.className = 'attr-matrix-table';
+
+  const thead = document.createElement('thead');
+  const headTr = document.createElement('tr');
+  const corner = document.createElement('th');
+  corner.className = 'attr-matrix-corner';
+  corner.textContent = '행 \\ 열';
+  headTr.appendChild(corner);
+  ATTR_IDS.forEach((id) => {
+    const th = document.createElement('th');
+    th.textContent = ATTR_LABELS[id];
+    headTr.appendChild(th);
+  });
+  thead.appendChild(headTr);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  ATTR_IDS.forEach((rowId, i) => {
+    const tr = document.createElement('tr');
+    const rowTh = document.createElement('th');
+    rowTh.textContent = ATTR_LABELS[rowId];
+    tr.appendChild(rowTh);
+    ATTR_IDS.forEach((colId, j) => {
+      const td = document.createElement('td');
+      if (i === j) {
+        td.textContent = '—';
+        td.className = 'attr-matrix-cell attr-matrix-diag';
+      } else {
+        const pct = getModifierPercent(rowId, colId);
+        td.textContent = formatSignedPercent(pct);
+        td.className = 'attr-matrix-cell';
+        if (pct > 0) td.classList.add('attr-matrix-pos');
+        else if (pct < 0) td.classList.add('attr-matrix-neg');
+        else td.classList.add('attr-matrix-zero');
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  container.appendChild(table);
+}
+
+function initAttributeCalculator() {
+  const wrap = document.getElementById('attr-matrix-wrap');
+  if (wrap) renderAttributeMatrix(wrap);
+
+  const myAtk = document.getElementById('attr-my-atk');
+  const myHp = document.getElementById('attr-my-hp');
+  const myElem = document.getElementById('attr-my-elem');
+  const oppAtk = document.getElementById('attr-opp-atk');
+  const oppHp = document.getElementById('attr-opp-hp');
+  const oppElem = document.getElementById('attr-opp-elem');
+  const btn = document.getElementById('attr-calc-btn');
+  const resultEl = document.getElementById('attr-result');
+  if (!btn || !resultEl || !myElem || !oppElem) return;
+
+  btn.addEventListener('click', () => {
+    resultEl.classList.remove('error');
+
+    const payload = {
+      myAttr: myElem.value,
+      oppAttr: oppElem.value,
+      myHp: parseOptionalNumber(myHp?.value),
+      myDmg: parseOptionalNumber(myAtk?.value),
+      oppHp: parseOptionalNumber(oppHp?.value),
+      oppDmg: parseOptionalNumber(oppAtk?.value),
+    };
+
+    const validation = validateAttributeCalcInput(payload);
+    if (!validation.ok) {
+      resultEl.textContent = validation.message;
+      resultEl.classList.add('error');
+      return;
+    }
+
+    const { myPercent, oppPercent, lines } = computeAttributeCalc(payload);
+    const frag = document.createDocumentFragment();
+    const summary = document.createElement('p');
+    const strong = document.createElement('strong');
+    strong.textContent = '속성 보정 ';
+    summary.appendChild(strong);
+    summary.appendChild(
+      document.createTextNode(
+        `나: ${formatSignedPercent(myPercent)} · 상대: ${formatSignedPercent(oppPercent)}`
+      )
+    );
+    frag.appendChild(summary);
+
+    if (lines.length === 0) {
+      const p = document.createElement('p');
+      p.textContent = '표시할 스탯이 없습니다. 체력 또는 평타 데미지를 하나 이상 입력하세요.';
+      frag.appendChild(p);
+    } else {
+      const ul = document.createElement('ul');
+      ul.className = 'attr-calc-result-list';
+      lines.forEach(({ label, before, after }) => {
+        const li = document.createElement('li');
+        li.textContent = `${label}: ${before} → ${after} (보정 후)`;
+        ul.appendChild(li);
+      });
+      frag.appendChild(ul);
+    }
+
+    resultEl.innerHTML = '';
+    resultEl.appendChild(frag);
+  });
+}
+
 // --- Mobile menu ---
 function initMobileMenu() {
   setTimeout(() => {
@@ -615,6 +737,7 @@ window.addEventListener('blur', () => {
 export function initUI() {
   initEfficiencyCalc();
   initSpeedCalc();
+  initAttributeCalculator();
   initProbabilityCalc();
   initAniEnhancementSimulator();
   initPositionTest();

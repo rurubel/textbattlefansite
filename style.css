@@ -617,3 +617,75 @@ body {
   color: #FFFFFF;
   border-radius: 8px;
 }
+
+/* Attribute calculator */
+.attr-calc-side-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.attr-matrix-heading {
+  margin-top: 1.5rem;
+  margin-bottom: 0.35rem;
+  font-size: 1.1rem;
+}
+
+.attr-matrix-scroll {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.attr-matrix-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.attr-matrix-table th,
+.attr-matrix-table td {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0.35rem 0.45rem;
+  text-align: center;
+}
+
+.attr-matrix-table thead th {
+  background: rgba(0, 0, 0, 0.35);
+  font-weight: 600;
+}
+
+.attr-matrix-table tbody th {
+  background: rgba(0, 0, 0, 0.28);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.attr-matrix-corner {
+  min-width: 4.5rem;
+}
+
+.attr-matrix-cell.attr-matrix-pos {
+  background: rgba(20, 94, 83, 0.35);
+}
+
+.attr-matrix-cell.attr-matrix-neg {
+  background: rgba(233, 69, 96, 0.2);
+}
+
+.attr-matrix-cell.attr-matrix-zero,
+.attr-matrix-cell.attr-matrix-diag {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.attr-calc-result-list {
+  margin: 0.6rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.result-box.error,
+#attr-result.error {
+  border: 1px solid rgba(233, 69, 96, 0.7);
+  background: rgba(233, 69, 96, 0.12);
+}

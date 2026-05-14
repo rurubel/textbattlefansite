@@ -24,6 +24,7 @@
       <button class="nav-btn" data-section="ani-enhancement">애니 강화 시뮬레이터</button>
       <button class="nav-btn" data-section="efficiency">효율 계산기</button>
       <button class="nav-btn" data-section="speed">선공 계산기</button>
+      <button class="nav-btn" data-section="attribute-calc">속성 계산기</button>
       <button class="nav-btn" data-section="position-test">포지션 성향 테스트</button>
       <button class="nav-btn" data-section="card-simulator">카드 시뮬레이터</button>
       <button class="nav-btn" data-section="characters">개발자 캐릭터 소개</button>
@@ -55,6 +56,7 @@
           <li>애니 강화 시뮬레이터 : 일반 강화, 집중 강화로 30강 애니를 뽑는 시뮬레이터</li>
           <li>효율 계산기 : 카드 + 애니의 성능을 확인하는 지표인 효율을 계산</li>
           <li>선공 계산기 : 나와 상대 중 누가 선공인지 계산</li>
+          <li>속성 계산기 : 속성 상성에 따른 평타 데미지·체력 보정값 계산</li>
           <li>포지션 성향 테스트 : 나에게 딱 맞는 포지션 추천</li>
           <li>카드 시뮬레이터 : 5성 카드를 뽑는 시뮬레이터</li>
           <li>개발자 캐릭터 소개 : 컨늅 패밀리 소개☺️</li>
@@ -132,6 +134,73 @@
           <span id="speed-result">값을 입력하세요</span>
         </div>
         <p><br>공격성에 포함된 민첩이나 레벨 보정은 계산하지 않습니다.</p>
+      </div>
+    </section>
+
+    <!-- Attribute compatibility calculator -->
+    <section id="attribute-calc" class="section">
+      <div class="card">
+        <h2>속성 계산기</h2>
+        <p class="formula-hint">나·상대 속성은 필수입니다. 체력·평타는 나 체+나 평타, 상대 체+상대 평타, 나 체+상대 체, 나 평타+상대 평타 중 하나 이상이 있어야 합니다.</p>
+        <div class="form-row attr-calc-columns">
+          <div>
+            <h3 class="attr-calc-side-title">나</h3>
+            <div class="form-group">
+              <label for="attr-my-atk">나의 평타 데미지</label>
+              <input type="number" id="attr-my-atk" min="0" placeholder="비워둘 수 있음">
+            </div>
+            <div class="form-group">
+              <label for="attr-my-hp">나의 체력</label>
+              <input type="number" id="attr-my-hp" min="0" placeholder="비워둘 수 있음">
+            </div>
+            <div class="form-group">
+              <label for="attr-my-elem">나의 속성</label>
+              <select id="attr-my-elem">
+                <option value="">선택</option>
+                <option value="fire">불</option>
+                <option value="none">무</option>
+                <option value="mind">정신</option>
+                <option value="water">물</option>
+                <option value="thunder">번개</option>
+                <option value="wind">바람</option>
+                <option value="dark">어둠</option>
+                <option value="light">빛</option>
+                <option value="earth">대지</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <h3 class="attr-calc-side-title">상대</h3>
+            <div class="form-group">
+              <label for="attr-opp-atk">상대의 평타 데미지</label>
+              <input type="number" id="attr-opp-atk" min="0" placeholder="비워둘 수 있음">
+            </div>
+            <div class="form-group">
+              <label for="attr-opp-hp">상대의 체력</label>
+              <input type="number" id="attr-opp-hp" min="0" placeholder="비워둘 수 있음">
+            </div>
+            <div class="form-group">
+              <label for="attr-opp-elem">상대의 속성</label>
+              <select id="attr-opp-elem">
+                <option value="">선택</option>
+                <option value="fire">불</option>
+                <option value="none">무</option>
+                <option value="mind">정신</option>
+                <option value="water">물</option>
+                <option value="thunder">번개</option>
+                <option value="wind">바람</option>
+                <option value="dark">어둠</option>
+                <option value="light">빛</option>
+                <option value="earth">대지</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary" id="attr-calc-btn">계산</button>
+        <div class="result-box result-highlight" id="attr-result">결과가 여기에 표시됩니다</div>
+        <h3 class="attr-matrix-heading">속성 상성표 (%)</h3>
+        <p class="formula-hint">행: 보정을 받는 속성 · 열: 상대 속성 (동일 속성은 0%)</p>
+        <div id="attr-matrix-wrap" class="attr-matrix-scroll"></div>
       </div>
     </section>
 
