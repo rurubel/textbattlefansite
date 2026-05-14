@@ -85,12 +85,17 @@ export function formatSignedPercent(percent) {
  */
 export function getAttributeStanceSentence(percent, who) {
   const isPlayer = who === 'player';
-  const topic = isPlayer ? '당신은' : '상대는';
+  const subject = isPlayer ? '당신은' : '상대는';
   const a = Math.abs(percent);
-  if (a === 0) return `${topic} 경합입니다.`;
-  if (a === 3) return `${topic} 약열세입니다.`;
-  if (a === 6 || a === 10) return `${topic} 열세입니다.`;
-  return null;
+
+  const textMap = {
+    0: '경합',
+    3: isPlayer ? '약열세' : '약우세',
+    6: isPlayer ? '열세' : '우세',
+    10: isPlayer ? '열세' : '우세',
+  };
+
+  return textMap[a] ? `${subject} ${textMap[a]}입니다.` : null;
 }
 
 /**
