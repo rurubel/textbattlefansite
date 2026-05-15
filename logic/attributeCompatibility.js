@@ -15,6 +15,7 @@ export const ATTR_IDS = [
   'earth',
 ];
 
+/** 기본 표기 (한국어). UI에서는 locale별 라벨로 치환 가능 */
 export const ATTR_LABELS = {
   fire: '불',
   none: '무',
@@ -81,21 +82,19 @@ export function formatSignedPercent(percent) {
  * 보정율 절댓값 기준: 0 → 경합, 3 → 약열세, 6·10 → 열세 (게임 상성 단계명).
  * @param {number} percent 나(또는 상대)에게 적용되는 보정 %
  * @param {'player' | 'opponent'} who
+ * @param {{ even: string, slightDis: string, slightAdv: string, dis: string, adv: string }} labels
  * @returns {string | null} 알 수 없는 크기면 null
  */
-export function getAttributeStanceSentence(percent, who) {
+export function getAttributeStanceSentence(percent, who, labels) {
+  if (!labels) return null;
   const isPlayer = who === 'player';
-  const subject = isPlayer ? '당신은' : '상대는';
   const a = Math.abs(percent);
 
-  const textMap = {
-    0: '경합',
-    3: isPlayer ? '약열세' : '약우세',
-    6: isPlayer ? '열세' : '우세',
-    10: isPlayer ? '열세' : '우세',
-  };
+  if (a === 0) return labels.even;
+  if (a === 3) return isPlayer ? labels.slightDis : labels.slightAdv;
+  if (a === 6 || a === 10) return isPlayer ? labels.dis : labels.adv;
 
-  return textMap[a] ? `${subject} ${textMap[a]}입니다.` : null;
+  return null;
 }
 
 /**
@@ -110,7 +109,7 @@ export function parseOptionalNumber(raw) {
 
 /**
  * @param {{ myAttr: string, oppAttr: string, myHp: number | null, myDmg: number | null, oppHp: number | null, oppDmg: number | null }} input
- * @returns {{ ok: true } | { ok: false, message: string }}
+ * @returns {{ ok: true } | { ok: false, code: 'select_attrs' }}
  */
 export function validateAttributeCalcInput(input) {
   const { myAttr, oppAttr } = input;
@@ -118,7 +117,7 @@ export function validateAttributeCalcInput(input) {
   if (!isValidAttrId(myAttr) || !isValidAttrId(oppAttr)) {
     return {
       ok: false,
-      message: '나와 상대의 속성을 모두 입력해주세요.',
+      code: 'select_attrs',
     };
   }
 
@@ -127,7 +126,7 @@ export function validateAttributeCalcInput(input) {
 
 /**
  * @param {{ myAttr: string, oppAttr: string, myHp: number | null, myDmg: number | null, oppHp: number | null, oppDmg: number | null }} input
- * @returns {{ myPercent: number, oppPercent: number, lines: { label: string, before: number | null, after: number | null }[] }}
+ * @returns {{ myPercent: number, oppPercent: number, lines: { key: 'myDmg' | 'myHp' | 'oppDmg' | 'oppHp', before: number | null, after: number | null }[] }}
  */
 export function computeAttributeCalc(input) {
   const { myAttr, oppAttr, myHp, myDmg, oppHp, oppDmg } = input;
@@ -135,22 +134,22 @@ export function computeAttributeCalc(input) {
 
   const lines = [
     {
-      label: '나의 평타 데미지',
+      key: 'myDmg',
       before: myDmg,
       after: myDmg === null ? null : applyAttributePercent(myDmg, myPercent),
     },
     {
-      label: '나의 체력',
+      key: 'myHp',
       before: myHp,
       after: myHp === null ? null : applyAttributePercent(myHp, myPercent),
     },
     {
-      label: '상대의 평타 데미지',
+      key: 'oppDmg',
       before: oppDmg,
       after: oppDmg === null ? null : applyAttributePercent(oppDmg, oppPercent),
     },
     {
-      label: '상대의 체력',
+      key: 'oppHp',
       before: oppHp,
       after: oppHp === null ? null : applyAttributePercent(oppHp, oppPercent),
     },

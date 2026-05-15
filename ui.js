@@ -1,15 +1,16 @@
 /**
  * UI bindings and event handlers
  */
+import { getLocale, t, applyDomI18n } from './i18n.js';
+import { getCharacterTexts } from './characterTexts.js';
 import { calculateEfficiency } from './logic/efficiency.js';
 import { getFirstStrikeDetail } from './logic/speed.js';
 import {
   runMonteCarlo,
-  formatProbability,
-  GRADE_NAMES,
   GRADE_VALUES,
   OPTION_TYPES,
-  getRandomGrade
+  getRandomGrade,
+  calculateEfficiencyFromSubs,
 } from './logic/probability.js';
 import { getQuestions, calculatePosition } from './logic/testLogic.js';
 import { characters } from './characters.js';
@@ -19,7 +20,6 @@ import {
 } from './logic/aniEnhancementSimulator.js';
 import {
   ATTR_IDS,
-  ATTR_LABELS,
   parseOptionalNumber,
   validateAttributeCalcInput,
   computeAttributeCalc,
@@ -29,8 +29,117 @@ import {
   formatAttributeCalcDecimal,
 } from './logic/attributeCompatibility.js';
 
-const OPT_LABELS = { atk: '공', spd: '속', crit: '크', def: '방', hp: '체' };
 const GRADE_CLASSES = ['grade-white', 'grade-green', 'grade-blue', 'grade-purple', 'grade-yellow'];
+
+const localeRefreshers = [];
+
+function optLabel(type) {
+  return t(`common.opt.${type}`);
+}
+
+function gradeLabel(g) {
+  return t(`common.grade.${g}`);
+}
+
+function formatSpeedMessage(detail) {
+  if (detail.kind === 'empty') return t('speed.empty');
+  if (detail.kind === 'tie') return t('speed.tie');
+  const { totalDiff, spdOptionDiff } = detail;
+  if (detail.kind === 'first_me') return t('speed.firstMe', { totalDiff, spdOptionDiff });
+  if (detail.kind === 'first_enemy') return t('speed.firstEnemy', { totalDiff, spdOptionDiff });
+  return '';
+}
+
+function fillElementSelect(select) {
+  if (!select) return;
+  const prev = select.value;
+  select.innerHTML = '';
+  const empty = document.createElement('option');
+  empty.value = '';
+  empty.textContent = t('attr.select');
+  select.appendChild(empty);
+  ATTR_IDS.forEach((id) => {
+    const o = document.createElement('option');
+    o.value = id;
+    o.textContent = t(`attr.elem.${id}`);
+    select.appendChild(o);
+  });
+  if ([...select.options].some((o) => o.value === prev)) select.value = prev;
+}
+
+function fillProbTypeSelect(sel) {
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '';
+  OPTION_TYPES.forEach((type) => {
+    const o = document.createElement('option');
+    o.value = type;
+    o.textContent = optLabel(type);
+    sel.appendChild(o);
+  });
+  if ([...sel.options].some((o) => o.value === prev)) sel.value = prev;
+}
+
+function fillProbGradeSelect(sel) {
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '';
+  for (let g = 0; g <= 4; g++) {
+    const o = document.createElement('option');
+    o.value = String(g);
+    o.textContent = gradeLabel(g);
+    sel.appendChild(o);
+  }
+  if ([...sel.options].some((o) => o.value === prev)) sel.value = prev;
+}
+
+function fillProbTargetStar(sel) {
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '';
+  for (let s = 2; s <= 5; s++) {
+    const o = document.createElement('option');
+    o.value = String(s);
+    o.textContent = t(`probability.star${s}`);
+    if (s === 5) o.selected = true;
+    sel.appendChild(o);
+  }
+  if ([...sel.options].some((o) => o.value === prev)) sel.value = prev;
+}
+
+function fillAniModeSelect(sel) {
+  if (!sel) return;
+  sel.innerHTML = '';
+  [['normal', 'ani.modeNormal'], ['focus', 'ani.modeFocus']].forEach(([val, key]) => {
+    const o = document.createElement('option');
+    o.value = val;
+    o.textContent = t(key);
+    if (val === 'normal') o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function fillAniFocusSelect(sel) {
+  if (!sel) return;
+  sel.innerHTML = '';
+  OPTION_TYPES.forEach((type) => {
+    const o = document.createElement('option');
+    o.value = type;
+    o.textContent = optLabel(type);
+    sel.appendChild(o);
+  });
+}
+
+function buildAniPickaxeOptions(container) {
+  if (!container) return;
+  container.innerHTML = '';
+  OPTION_TYPES.forEach((type) => {
+    const lab = document.createElement('label');
+    lab.className = 'ani-inline-check';
+    lab.innerHTML = `<input type="checkbox" name="ani-pickaxe-opt" value="${type}"> ${optLabel(type)}`;
+    container.appendChild(lab);
+  });
+}
 
 // --- Efficiency Calculator ---
 function initEfficiencyCalc() {
@@ -62,19 +171,21 @@ function initSpeedCalc() {
   const result = document.getElementById('speed-result');
 
   const update = () => {
-    const text = getFirstStrikeDetail(
+    const detail = getFirstStrikeDetail(
       Number(myAgi.value) || 0,
       Number(mySpd.value) || 0,
       Number(enemyAgi.value) || 0,
       Number(enemySpd.value) || 0,
       Number(conv.value) || 1
     );
-    result.textContent = text;
+    result.textContent = formatSpeedMessage(detail);
   };
 
   [myAgi, mySpd, enemyAgi, enemySpd, conv].forEach((el) =>
     el.addEventListener('input', update)
   );
+  update();
+  localeRefreshers.push(update);
 }
 
 // --- Probability Calculator ---
@@ -90,6 +201,15 @@ function initProbabilityCalc() {
 
   let currentSubs = [];
 
+  function ensureHint() {
+    if (currentSubs.length === 0 && !subList.querySelector('.hint')) {
+      const p = document.createElement('p');
+      p.className = 'hint';
+      p.textContent = t('probability.subHint');
+      subList.appendChild(p);
+    }
+  }
+
   function renderSubList() {
     const hint = subList.querySelector('.hint');
     if (hint) hint.remove();
@@ -100,9 +220,9 @@ function initProbabilityCalc() {
       div.className = 'sub-item';
       div.innerHTML = `
         <span class="${GRADE_CLASSES[sub.grade]}">
-  ${OPT_LABELS[sub.type]} +${sub.value}
+  ${optLabel(sub.type)} +${sub.value}
 </span>
-        <button type="button" data-index="${i}">삭제</button>
+        <button type="button" data-index="${i}">${t('common.delete')}</button>
       `;
       div.querySelector('button').addEventListener('click', () => {
         currentSubs.splice(i, 1);
@@ -110,87 +230,96 @@ function initProbabilityCalc() {
       });
       subList.appendChild(div);
     });
+    ensureHint();
   }
+
+  function refreshProbSelects() {
+    fillProbTypeSelect(optType);
+    fillProbGradeSelect(grade);
+    fillProbTargetStar(targetStar);
+  }
+
+  refreshProbSelects();
+  resultEl.textContent = t('common.resultPlaceholder');
 
   addBtn.addEventListener('click', () => {
     const star = parseInt(targetStar.value, 10) || 5;
-  
-    // ✅ 목표 성급 이상이면 추가 금지
-    if (currentSubs.length >= star-1) {
-      resultEl.textContent = `부옵을 목표 성급과 같거나 높게 추가할 수 없습니다.`;
+
+    if (currentSubs.length >= star - 1) {
+      resultEl.textContent = t('probability.errTooMany');
       resultEl.classList.add('error');
       return;
     }
-  
+
     const type = optType.value;
     const g = parseInt(grade.value, 10);
     const val = GRADE_VALUES[type][g];
-  
+
     currentSubs.push({ type, grade: g, value: val });
     renderSubList();
   });
 
   calcBtn.addEventListener('click', () => {
     if (currentSubs.length === 0) {
-      resultEl.textContent = '계산을 원하시는 카드의 부옵을 추가 해주세요';
+      resultEl.textContent = t('probability.errNoSubs');
       return;
     }
-    resultEl.textContent = '계산 중...';
+    resultEl.textContent = t('common.calculating');
     resultEl.classList.remove('error');
-  
+
     setTimeout(() => {
       try {
         const star = parseInt(targetStar.value, 10) || 5;
         const eff = parseInt(targetEff.value, 10) || 0;
-        const currentEff = calculateEfficiency(currentSubs);
+        const currentEff = calculateEfficiencyFromSubs(currentSubs);
         const remaining = Math.max(0, star - currentSubs.length);
-  
+
         if (currentEff >= eff) {
-          resultEl.textContent = `목표 효율 ${eff}의 달성 확률은 100% 입니다.`;
+          resultEl.textContent = t('probability.prob100', { eff });
           return;
         }
-  
-        const maxPossible = currentEff + (remaining * 10);
-  
+
+        const maxPossible = currentEff + remaining * 10;
+
         if (eff > maxPossible) {
-          resultEl.textContent = `목표 효율 ${eff} 달성 확률: 0%`;
+          resultEl.textContent = t('probability.prob0', { eff });
           return;
         }
-  
+
         const p = runMonteCarlo(currentSubs, star, eff, 100000);
-  
-        // 🔥 확률 후처리 (초소수 → 0 처리)
+
         let finalP = p;
         if (p > 0 && p < 1e-8) {
           finalP = 0;
         }
-  
-        function formatPercent(p) {
-          if (p === 0) return '0';
-        
-          const percent = p * 100;
-        
-          // 작은 값은 정밀하게, 대신 불필요한 0 제거
+
+        function formatPercent(pct) {
+          if (pct === 0) return '0';
+          const percent = pct * 100;
           if (percent < 1) {
             return parseFloat(percent.toFixed(8)).toString();
           }
-        
-          // 일반 값은 2자리까지만
           return parseFloat(percent.toFixed(2)).toString();
         }
-        
+
         const pct = formatPercent(finalP);
-  
-        resultEl.textContent = `목표 효율 ${eff} 달성 확률: ${pct}%`;
-  
+
+        resultEl.textContent = t('probability.prob', { eff, pct });
       } catch (e) {
-        resultEl.textContent = '계산 오류: ' + e.message;
+        resultEl.textContent = t('probability.calcErr') + e.message;
         resultEl.classList.add('error');
       }
     }, 50);
   });
 
   renderSubList();
+
+  localeRefreshers.push(() => {
+    refreshProbSelects();
+    renderSubList();
+    resultEl.textContent = t('common.resultPlaceholder');
+    resultEl.classList.remove('error');
+  });
 }
 
 // --- Position Test ---
@@ -209,7 +338,7 @@ function initPositionTest() {
   const continueBtn = document.getElementById('result-continue-btn');
   const restartBtn = document.getElementById('result-restart-btn');
 
-  const qList = getQuestions();
+  const qList = () => getQuestions(getLocale());
   let currentQ = 0;
   let answers = [];
 
@@ -226,12 +355,13 @@ function initPositionTest() {
     resultDiv.classList.add('hidden');
     questionsDiv.classList.remove('hidden');
 
-    if (idx >= qList.length) {
+    const list = qList();
+    if (idx >= list.length) {
       showResult();
       return;
     }
 
-    const q = qList[idx];
+    const q = list[idx];
     qNum.textContent = `Q${q.id}`;
     qText.textContent = q.text;
     qOptions.innerHTML = '';
@@ -257,12 +387,10 @@ function initPositionTest() {
     intro.classList.add('hidden');
     questionsDiv.classList.add('hidden');
     resultDiv.classList.remove('hidden');
-    const pos = calculatePosition(answers);
+    const pos = calculatePosition(answers, getLocale());
     resultPosition.textContent = pos.name;
-    resultAttributes.innerHTML = `
-      <p>${pos.description}</p>
-    `;
-    continueBtn.classList.toggle('hidden', answers.length >= qList.length);
+    resultAttributes.innerHTML = `<p>${pos.description}</p>`;
+    continueBtn.classList.toggle('hidden', answers.length >= qList().length);
   }
 
   startBtn.addEventListener('click', () => showQuestion(0));
@@ -285,6 +413,14 @@ function initPositionTest() {
   restartBtn.addEventListener('click', showIntro);
 
   showIntro();
+
+  localeRefreshers.push(() => {
+    if (!questionsDiv.classList.contains('hidden')) {
+      showQuestion(currentQ);
+    } else if (!resultDiv.classList.contains('hidden') && answers.length) {
+      showResult();
+    }
+  });
 }
 
 // --- Card Simulator ---
@@ -306,13 +442,11 @@ function initCardSimulator() {
     const types = ['atk', 'spd', 'crit', 'def', 'hp'];
     const type = types[Math.floor(Math.random() * 5)];
     const value = MAIN_VALUES[type];
-  
     return { type, value };
   }
 
   function randomStat() {
     const types = ['atk', 'spd', 'crit', 'def', 'hp'];
-    const grades = [0, 1, 2, 3, 4];
     const type = types[Math.floor(Math.random() * 5)];
     const grade = getRandomGrade();
     const value = GRADE_VALUES[type][grade];
@@ -322,15 +456,11 @@ function initCardSimulator() {
   rollBtn.addEventListener('click', () => {
     const main = randomMainStat();
     const subs = Array.from({ length: 5 }, () => randomStat());
-    simMain.innerHTML = `
-  <span>
-    ${OPT_LABELS[main.type]} +${main.value}%
-  </span>
-`;
+    simMain.innerHTML = `<span>${optLabel(main.type)} +${main.value}%</span>`;
     simSubs.innerHTML = subs
       .map(
         (s) =>
-          `<div class="sub-stat"><span class="${GRADE_CLASSES[s.grade]}">${OPT_LABELS[s.type]} +${s.value}</span></div>`
+          `<div class="sub-stat"><span class="${GRADE_CLASSES[s.grade]}">${optLabel(s.type)} +${s.value}</span></div>`
       )
       .join('');
     cardResult.classList.remove('hidden');
@@ -357,20 +487,22 @@ function initAniEnhancementSimulator() {
     return;
   }
 
-  const pickaxeCheckboxes = pickaxeOptionsEl.querySelectorAll('input[type="checkbox"]');
+  fillAniModeSelect(modeSelect);
+  fillAniFocusSelect(focusOptionSelect);
+  buildAniPickaxeOptions(pickaxeOptionsEl);
+  pickaxeOptionsEl.addEventListener('change', (e) => {
+    const tgt = e.target;
+    if (tgt && tgt.matches && tgt.matches('input[name="ani-pickaxe-opt"]')) {
+      onPickaxeCheckboxChange(e);
+    }
+  });
 
   function updateModeUI() {
     const isFocus = modeSelect.value === 'focus';
     focusOptionSelect.disabled = !isFocus;
-    const pickaxeOn = pickaxeEnabled.checked;
+    const pickaxeCheckboxes = pickaxeOptionsEl.querySelectorAll('input[type="checkbox"]');
     pickaxeCheckboxes.forEach((cb) => {
       cb.disabled = false;
-    });
-    pickaxeEnabled.addEventListener('change', () => {
-      if (!pickaxeEnabled.checked) {
-        pickaxeCheckboxes.forEach(cb => cb.checked = false);
-      }
-      updateModeUI();
     });
   }
 
@@ -394,45 +526,45 @@ function initAniEnhancementSimulator() {
       usePickaxe,
       pickaxeTriggerOptions,
     } = result;
+    const tu = t('ani.timesUnit');
     const focusText =
       useFocus && focusOption
         ? `
-        <p><strong>집중 강화 옵션</strong>: ${OPT_LABELS[focusOption]}</p>
-        <p><strong>집중 강화 옵션 강화 횟수</strong>: ${stats.focusHit}회</p>
+        <p><strong>${t('ani.resFocusOpt')}</strong>: ${optLabel(focusOption)}</p>
+        <p><strong>${t('ani.resFocusHits')}</strong>: ${stats.focusHit}${tu}</p>
       `
         : '';
 
     const pickaxeLabels =
       usePickaxe && pickaxeTriggerOptions && pickaxeTriggerOptions.length
-        ? pickaxeTriggerOptions.map((o) => OPT_LABELS[o]).join(', ')
+        ? pickaxeTriggerOptions.map((o) => optLabel(o)).join(', ')
         : '';
 
     const pickaxeText = usePickaxe
       ? `
-        <p><strong>곡괭이 사용 옵션</strong>: ${pickaxeLabels || '없음'}</p>
-        <p><strong>곡괭이 사용 횟수</strong>: ${stats.pickaxeUsed}회</p>
+        <p><strong>${t('ani.resPickOpts')}</strong>: ${pickaxeLabels || t('ani.none')}</p>
+        <p><strong>${t('ani.resPickUses')}</strong>: ${stats.pickaxeUsed}${tu}</p>
       `
       : '';
-  const statLines = [
-    { key: 'atk', label: '공' },
-    { key: 'spd', label: '속' },
-    { key: 'crit', label: '크' },
-    { key: 'def', label: '방' },
-    { key: 'hp', label: '체' },
-  ]
-    .filter(stat => optionCounts[stat.key] > 0) // 칸 기준이면 이것도 counts로
-    .sort((a, b) => optionCounts[b.key] - optionCounts[a.key]) // 🔥 칸 수 내림차순
-    .map(stat => `
-      <p><strong>${stat.label}</strong> (${optionCounts[stat.key]}칸) 합계값: ${optionValueSums[stat.key]}</p>
-    `)
-    .join('');
+
+    const statLines = ['atk', 'spd', 'crit', 'def', 'hp']
+      .filter((key) => optionCounts[key] > 0)
+      .sort((a, b) => optionCounts[b] - optionCounts[a])
+      .map(
+        (key) =>
+          `<p><strong>${optLabel(key)}</strong> ${t('ani.slotSum', {
+            n: optionCounts[key],
+            v: optionValueSums[key],
+          })}</p>`
+      )
+      .join('');
 
     resultEl.innerHTML = `
       <div class="ani-result-grid">
-        <p><strong>총 시도 횟수</strong>: ${stats.total}회</p>
-        <p><strong>성공</strong>: ${stats.success}회</p>
-        <p><strong>실패</strong>: ${stats.fail}회</p>
-        <p><strong>하락</strong>: ${stats.down}회</p>
+        <p><strong>${t('ani.resTotal')}</strong>: ${stats.total}${tu}</p>
+        <p><strong>${t('ani.resSuccess')}</strong>: ${stats.success}${tu}</p>
+        <p><strong>${t('ani.resFail')}</strong>: ${stats.fail}${tu}</p>
+        <p><strong>${t('ani.resDown')}</strong>: ${stats.down}${tu}</p>
         ${focusText}
         ${pickaxeText}
       </div>
@@ -444,8 +576,14 @@ function initAniEnhancementSimulator() {
   }
 
   modeSelect.addEventListener('change', updateModeUI);
-  pickaxeEnabled.addEventListener('change', updateModeUI);
-  pickaxeCheckboxes.forEach((cb) => cb.addEventListener('change', onPickaxeCheckboxChange));
+  pickaxeEnabled.addEventListener('change', () => {
+    if (!pickaxeEnabled.checked) {
+      pickaxeOptionsEl.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+        cb.checked = false;
+      });
+    }
+    updateModeUI();
+  });
   runBtn.addEventListener('click', () => {
     const useFocus = modeSelect.value === 'focus';
     const focusOption = useFocus ? focusOptionSelect.value : null;
@@ -465,13 +603,23 @@ function initAniEnhancementSimulator() {
   });
 
   updateModeUI();
+  resultEl.textContent = t('common.resultPlaceholder');
+
+  localeRefreshers.push(() => {
+    fillAniModeSelect(modeSelect);
+    fillAniFocusSelect(focusOptionSelect);
+    buildAniPickaxeOptions(pickaxeOptionsEl);
+    updateModeUI();
+    if (!resultEl.querySelector('.ani-result-grid')) {
+      resultEl.textContent = t('common.resultPlaceholder');
+    }
+  });
 }
 
 // --- Characters ---
 function initCharacters() {
   let currentIndex = 1;
   let currentCharacter = null;
-  let lastIndex = 1;
   const selector = document.getElementById('char-selector');
   const img = document.getElementById('char-img');
   const name = document.getElementById('char-name');
@@ -484,67 +632,65 @@ function initCharacters() {
 
   function renderCharacter(c) {
     currentCharacter = c;
-  
-    currentIndex = 1; // 👈 항상 1부터 시작
+    currentIndex = 1;
     img.src = `${basePath}${c.id}/${currentIndex}.webp`;
-  
+
+    const texts = getCharacterTexts(getLocale(), c.id);
     name.textContent = c.name;
-    line.textContent = c.line || '';
-    description.textContent = c.description;
-  
-    extra.innerHTML = (c.extra || [])
-      .map(t => `<p>${t}</p>`)
-      .join('');
+    line.textContent = texts?.line || '';
+    description.textContent = texts?.description || '';
+    if (story) {
+      story.textContent = texts?.story || '';
+    }
+    extra.innerHTML = (texts?.extra || []).map((x) => `<p>${x}</p>`).join('');
   }
 
   const randomBtn = document.getElementById('char-random-btn');
 
   randomBtn.addEventListener('click', () => {
     if (!currentCharacter) return;
-  
     currentIndex++;
-  
-    // 👇 마지막 넘으면 다시 1로
     if (currentIndex > currentCharacter.imageCount) {
       currentIndex = 1;
     }
-  
     img.src = `${basePath}${currentCharacter.id}/${currentIndex}.webp`;
   });
 
   function renderSelector() {
-    selector.innerHTML = characters.map(c => `
-      <button class="btn btn-secondary char-btn" data-id="${c.id}">
+    selector.innerHTML = characters
+      .map(
+        (c) => `
+      <button type="button" class="btn btn-secondary char-btn" data-id="${c.id}">
         ${c.name}
       </button>
-    `).join('');
+    `
+      )
+      .join('');
 
-    selector.querySelectorAll('button').forEach(btn => {
+    selector.querySelectorAll('button').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
-        const c = characters.find(x => x.id === id);
-    
-        // ✅ 기존 active 제거
-        selector.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-    
-        // ✅ 클릭한 버튼에 active 추가
+        const c = characters.find((x) => x.id === id);
+        selector.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
-    
-        // 캐릭터 렌더링
         renderCharacter(c);
       });
     });
   }
 
   renderSelector();
-  renderCharacter(characters[0]); // 첫 캐릭터 기본 표시
-
+  renderCharacter(characters[0]);
   const firstBtn = selector.querySelector('button');
-if (firstBtn) firstBtn.classList.add('active');
+  if (firstBtn) firstBtn.classList.add('active');
+
+  localeRefreshers.push(() => {
+    if (currentCharacter) renderCharacter(currentCharacter);
+  });
 }
 
 // --- Attribute compatibility calculator ---
 function renderAttributeMatrix(container) {
+  if (!container) return;
   container.innerHTML = '';
   const table = document.createElement('table');
   table.className = 'attr-matrix-table';
@@ -553,11 +699,11 @@ function renderAttributeMatrix(container) {
   const headTr = document.createElement('tr');
   const corner = document.createElement('th');
   corner.className = 'attr-matrix-corner';
-  corner.textContent = '행 \\ 열';
+  corner.textContent = t('attr.matrixCorner');
   headTr.appendChild(corner);
   ATTR_IDS.forEach((id) => {
     const th = document.createElement('th');
-    th.textContent = ATTR_LABELS[id];
+    th.textContent = t(`attr.elem.${id}`);
     headTr.appendChild(th);
   });
   thead.appendChild(headTr);
@@ -567,12 +713,12 @@ function renderAttributeMatrix(container) {
   ATTR_IDS.forEach((rowId, i) => {
     const tr = document.createElement('tr');
     const rowTh = document.createElement('th');
-    rowTh.textContent = ATTR_LABELS[rowId];
+    rowTh.textContent = t(`attr.elem.${rowId}`);
     tr.appendChild(rowTh);
     ATTR_IDS.forEach((colId, j) => {
       const td = document.createElement('td');
       if (i === j) {
-        td.textContent = '—';
+        td.textContent = t('attr.matrixDash');
         td.className = 'attr-matrix-cell attr-matrix-diag';
       } else {
         const pct = getModifierPercent(rowId, colId);
@@ -592,8 +738,6 @@ function renderAttributeMatrix(container) {
 
 function initAttributeCalculator() {
   const wrap = document.getElementById('attr-matrix-wrap');
-  if (wrap) renderAttributeMatrix(wrap);
-
   const myAtk = document.getElementById('attr-my-atk');
   const myHp = document.getElementById('attr-my-hp');
   const myElem = document.getElementById('attr-my-elem');
@@ -602,6 +746,16 @@ function initAttributeCalculator() {
   const oppElem = document.getElementById('attr-opp-elem');
   const btn = document.getElementById('attr-calc-btn');
   const resultEl = document.getElementById('attr-result');
+
+  function refreshAttrSelects() {
+    fillElementSelect(myElem);
+    fillElementSelect(oppElem);
+  }
+
+  refreshAttrSelects();
+  if (wrap) renderAttributeMatrix(wrap);
+  resultEl.textContent = t('attr.resultPlaceholder');
+
   if (!btn || !resultEl || !myElem || !oppElem) return;
 
   btn.addEventListener('click', () => {
@@ -618,7 +772,7 @@ function initAttributeCalculator() {
 
     const validation = validateAttributeCalcInput(payload);
     if (!validation.ok) {
-      resultEl.textContent = validation.message;
+      resultEl.textContent = t('attr.errorSelect');
       resultEl.classList.add('error');
       return;
     }
@@ -627,37 +781,46 @@ function initAttributeCalculator() {
     const frag = document.createDocumentFragment();
     const summary = document.createElement('p');
     const strong = document.createElement('strong');
-    strong.textContent = '속성 보정 ';
+    strong.textContent = t('attr.summaryPrefix');
     summary.appendChild(strong);
     summary.appendChild(
       document.createTextNode(
-        `나: ${formatSignedPercent(myPercent)} · 상대: ${formatSignedPercent(oppPercent)}`
+        `${t('attr.youAdj')}${formatSignedPercent(myPercent)}${t('attr.summaryJoin')}${t('attr.oppAdj')}${formatSignedPercent(oppPercent)}`
       )
     );
     frag.appendChild(summary);
 
+    const stanceLabels = {
+      even: t('attr.stance.even'),
+      slightDis: t('attr.stance.slightDis'),
+      slightAdv: t('attr.stance.slightAdv'),
+      dis: t('attr.stance.dis'),
+      adv: t('attr.stance.adv'),
+    };
+
     const stanceP1 = document.createElement('p');
     stanceP1.className = 'attr-calc-stance';
     stanceP1.textContent =
-      getAttributeStanceSentence(myPercent, 'player') ??
-      `당신 쪽 상성 보정은 ${formatSignedPercent(myPercent)}입니다.`;
+      getAttributeStanceSentence(myPercent, 'player', stanceLabels) ??
+      t('attr.stanceFallbackYou', { pct: formatSignedPercent(myPercent) });
     frag.appendChild(stanceP1);
 
     const stanceP2 = document.createElement('p');
     stanceP2.className = 'attr-calc-stance';
     stanceP2.textContent =
-      getAttributeStanceSentence(oppPercent, 'opponent') ??
-      `상대 쪽 상성 보정은 ${formatSignedPercent(oppPercent)}입니다.`;
+      getAttributeStanceSentence(oppPercent, 'opponent', stanceLabels) ??
+      t('attr.stanceFallbackOpp', { pct: formatSignedPercent(oppPercent) });
     frag.appendChild(stanceP2);
 
     const ul = document.createElement('ul');
     ul.className = 'attr-calc-result-list';
-    lines.forEach(({ label, before, after }) => {
+    lines.forEach(({ key, before, after }) => {
       const li = document.createElement('li');
+      const label = t(`attr.lineKeys.${key}`);
       if (before === null) {
-        li.textContent = `${label}: (작성하지 않음)`;
+        li.textContent = `${label}: ${t('attr.omitted')}`;
       } else {
-        li.textContent = `${label}: ${formatAttributeCalcDecimal(before)} → ${formatAttributeCalcDecimal(after)} (보정 후)`;
+        li.textContent = `${label}: ${formatAttributeCalcDecimal(before)}${t('attr.arrow')}${formatAttributeCalcDecimal(after)}${t('attr.afterSuffix')}`;
       }
       ul.appendChild(li);
     });
@@ -665,6 +828,13 @@ function initAttributeCalculator() {
 
     resultEl.innerHTML = '';
     resultEl.appendChild(frag);
+  });
+
+  localeRefreshers.push(() => {
+    refreshAttrSelects();
+    if (wrap) renderAttributeMatrix(wrap);
+    resultEl.textContent = t('attr.resultPlaceholder');
+    resultEl.classList.remove('error');
   });
 }
 
@@ -676,11 +846,8 @@ function initMobileMenu() {
 
     if (btn && nav) {
       btn.addEventListener('click', () => {
-        console.log('menu click'); // 디버그
         nav.classList.toggle('open');
       });
-    } else {
-      console.log('menu init fail', btn, nav);
     }
   }, 0);
 }
@@ -699,23 +866,18 @@ document.addEventListener('contextmenu', (e) => {
   let x;
   let y;
 
-  // 👉 좌우 방향 결정
   if (isRightSide) {
-    // 오른쪽 클릭 → 왼쪽에 표시
     x = e.pageX - menuWidth;
   } else {
-    // 왼쪽 클릭 → 오른쪽에 표시
     x = e.pageX;
   }
 
-  // 👉 아래로 넘치면 위로
   if (e.clientY > window.innerHeight / 2) {
     y = e.pageY - menuHeight;
   } else {
     y = e.pageY;
   }
 
-  // 👉 화면 밖 방지 (보정)
   x = Math.max(0, Math.min(x, window.innerWidth - menuWidth));
   y = Math.max(0, Math.min(y, window.innerHeight - menuHeight));
 
@@ -725,7 +887,6 @@ document.addEventListener('contextmenu', (e) => {
   menu.classList.remove('hidden');
 });
 
-// 클릭하면 닫기
 document.addEventListener('click', () => {
   menu.classList.add('hidden');
 });
@@ -736,17 +897,26 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// 탭 이동 / 최소화
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     menu.classList.add('hidden');
   }
 });
 
-// 다른 프로그램 클릭
 window.addEventListener('blur', () => {
   menu.classList.add('hidden');
 });
+
+function runLocaleRefreshers() {
+  applyDomI18n();
+  localeRefreshers.forEach((fn) => {
+    try {
+      fn();
+    } catch (_) {}
+  });
+}
+
+window.addEventListener('tb-locale-change', runLocaleRefreshers);
 
 export function initUI() {
   initEfficiencyCalc();
@@ -758,4 +928,7 @@ export function initUI() {
   initCardSimulator();
   initCharacters();
   initMobileMenu();
+
+  document.getElementById('prob-result').textContent = t('common.resultPlaceholder');
+  document.getElementById('ani-result').textContent = t('common.resultPlaceholder');
 }

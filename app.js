@@ -3,9 +3,12 @@
  */
 
 import { initRouter, navigate } from './router.js';
+import { initI18n } from './i18n.js';
 import { initUI } from './ui.js';
 
 function init() {
+  initI18n();
+
   const navButtons = document.querySelectorAll('.nav-btn');
 
   initRouter(navButtons, (section) => {
