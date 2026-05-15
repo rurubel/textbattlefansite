@@ -10,7 +10,7 @@ const COMMON_KO = {
 
 const COMMON_EN = {
   opt: { atk: 'ATK', spd: 'SPD', crit: 'CRT', def: 'DEF', hp: 'HP' },
-  grade: { 0: 'W', 1: 'G', 2: 'B', 3: 'P', 4: 'Y' },
+  grade: { 0: 'White', 1: 'Green', 2: 'Blue', 3: 'Purple', 4: 'Yellow' },
   delete: 'Remove',
   calculating: 'Calculating...',
   resultPlaceholder: 'Results will appear here',
