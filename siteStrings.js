@@ -245,7 +245,7 @@ export const MESSAGES = {
       featAttr: 'Attribute calculator: normal-attack damage and HP modifiers from matchups',
       featPos: 'Position quiz: find a role that fits you',
       featCard: 'Card simulator: roll a 5★ card',
-      featChar: 'Dev characters: meet the Coneip family ☺️',
+      featChar: 'Dev characters: meet the nyub family ☺️',
       noticeTitle: 'Notice',
       notice1: '@TeamGurod This site is not an official TeamGurod or logbrix.Textbattle website.',
       notice2: 'All game assets belong to TeamGurod, makers of Text Battle.',
