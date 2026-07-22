@@ -387,10 +387,9 @@ function refillToCap(state, maxTickets) {
   return Math.max(0, state.tickets - before);
 }
 
-/** 직접 입력·티켓작 = 테라, 프리셋 = 선택 콘텐츠(습던만 테라) */
+/** 직접 입력·티켓작 = 테라, 프리셋 = 선택 콘텐츠 */
 export function resolveBurnActivityId(mode) {
   if (!mode || mode === 'direct') return 'terra';
-  if (mode === 'habit') return 'terra';
   return mode;
 }
 
@@ -432,12 +431,21 @@ function runActivity(state, activityId, targetLevel, maxTickets, useLevelUpTicke
   const need = xpToNext(state.level) - state.xp;
   const wouldLevelUp = activity.xp >= need;
 
-  // 습던 + 레벨업 티켓 사용 ON: 레벨업을 유발하면 테라로 대체
+  // 습던 + 레벨업 티켓 사용 ON:
+  // 레벨업 직전까지 습던, 레벨업이 나오는 구간만 테라(필요 시 연속 테라로 해당 레벨업 완료)
   if (activityId === 'habit' && useLevelUpTickets && wouldLevelUp) {
-    runActivity(state, 'terra', targetLevel, maxTickets, useLevelUpTickets, {
-      ...opts,
-      burnActivityId: burnId,
-    });
+    const levelBefore = state.level;
+    let guard = 0;
+    while (
+      state.level === levelBefore &&
+      state.level < targetLevel &&
+      guard++ < 20
+    ) {
+      runActivity(state, 'terra', targetLevel, maxTickets, useLevelUpTickets, {
+        ...opts,
+        burnActivityId: burnId,
+      });
+    }
     return;
   }
 
