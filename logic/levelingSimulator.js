@@ -177,9 +177,60 @@ export function parsePvpRangeKey(key) {
 }
 
 /**
- * 티켓작 1사이클: 부캐 Lv1→endLevel 테라 육성.
- * 각 테라 판은 부캐와 본캐가 함께 들어가 둘 다 XP를 받는다.
- * 회수 티켓 = 부캐 레벨업 충전합 − 해당 사이클 테라 소비 티켓.
+ * 부캐 다음 레벨업에 필요한 테라 티켓 (레벨업 각).
+ * ceil(필요XP / 50) * 10
+ */
+export function ticketsNeededForAltLevelUp(altLevel, altXp, endLevel) {
+  if (altLevel >= endLevel) return 0;
+  const needXp = Math.max(0, xpToNext(altLevel) - altXp);
+  if (needXp <= 0) return 0;
+  const runs = Math.ceil(needXp / ACTIVITIES.terra.xp);
+  return runs * TERRA_COST;
+}
+
+/**
+ * 충전 직후 잉여 티켓으로 본캐 단독 테라.
+ * 본캐 단독 판수 = floor((보유티켓 - 부캐 레벨업 각 티켓) / 10)
+ */
+function spendSurplusTicketsOnMain(
+  state,
+  alt,
+  endLevel,
+  maxTickets,
+  targetLevel,
+  useLevelUpTickets
+) {
+  if (state.level >= targetLevel) return;
+
+  const needTickets =
+    alt.level >= endLevel
+      ? 0
+      : ticketsNeededForAltLevelUp(alt.level, alt.xp, endLevel);
+  const surplus = Math.max(0, alt.tickets - needTickets);
+  const mainSoloRuns = Math.floor(surplus / TERRA_COST);
+
+  for (let i = 0; i < mainSoloRuns && state.level < targetLevel; i++) {
+    if (alt.tickets < TERRA_COST) break;
+    alt.tickets -= TERRA_COST;
+    alt.spent += TERRA_COST;
+    state.totalTicketsSpent += TERRA_COST;
+    recordActivity(state, 'terra', 1);
+    // 본캐만 XP (부캐는 미참여)
+    state.xp += ACTIVITIES.terra.xp;
+    applyLevelUps(state, 'terra', targetLevel, maxTickets, useLevelUpTickets, 'terra');
+  }
+}
+
+function refillAltTickets(alt, maxTickets) {
+  const before = alt.tickets;
+  alt.tickets = maxTickets;
+  const gained = Math.max(0, alt.tickets - before);
+  alt.refillSum += gained;
+  return gained;
+}
+
+/**
+ * 티켓작 1사이클 메타 (부캐만). 잉여→본캐 단독 규칙은 runTicketCraftCycles에서 적용.
  */
 export function simulateAltTicketCraft(endLevel, ticketBoost) {
   const maxTickets = ticketCap(ticketBoost);
@@ -189,9 +240,20 @@ export function simulateAltTicketCraft(endLevel, ticketBoost) {
   let spent = 0;
   let refillSum = 0;
   let terraRuns = 0;
+  let mainSoloRuns = 0;
 
   let guard = 0;
   while (level < endLevel && guard++ < MAX_SIM_DAYS * 50) {
+    // 충전 직후 잉여분을 본캐 단독으로 쓴다고 가정한 소모량만 집계
+    if (tickets > 0) {
+      const needTickets = ticketsNeededForAltLevelUp(level, xp, endLevel);
+      const surplus = Math.max(0, tickets - needTickets);
+      const solo = Math.floor(surplus / TERRA_COST);
+      mainSoloRuns += solo;
+      tickets -= solo * TERRA_COST;
+      spent += solo * TERRA_COST;
+    }
+
     spent += TERRA_COST;
     tickets = Math.max(0, tickets - TERRA_COST);
     xp += ACTIVITIES.terra.xp;
@@ -213,17 +275,20 @@ export function simulateAltTicketCraft(endLevel, ticketBoost) {
   }
 
   return {
-    netTickets: refillSum - spent,
+    netTickets: tickets, // 사이클 종료 시 풀에 남은 티켓
     spent,
     refillSum,
     endLevel: level,
     terraRuns,
+    mainSoloRuns,
   };
 }
 
 /**
  * 티켓작 사이클을 본캐 상태에 적용.
- * 테라 1판마다 본캐도 50 XP를 얻고, 사이클 종료 후 순 회수 티켓을 본캐 풀에 합류시킨다.
+ * - 파티 테라: 부캐+본캐 동시 XP
+ * - 부캐 충전 직후: (cap - 레벨업 각 티켓) / 10 판은 본캐 단독 테라
+ * - 사이클 종료 시 부캐 풀 잔여 티켓만 본캐에 합류
  */
 function runTicketCraftCycles(state, cycles, endLevel, ticketBoost, targetLevel, maxTickets, useLevelUpTickets) {
   if (!useLevelUpTickets || cycles <= 0 || endLevel <= 1) return;
@@ -231,42 +296,68 @@ function runTicketCraftCycles(state, cycles, endLevel, ticketBoost, targetLevel,
   for (let i = 0; i < cycles; i++) {
     if (state.level >= targetLevel) break;
 
-    let altLevel = 1;
-    let altXp = 0;
-    let altTickets = 0;
-    let spent = 0;
-    let refillSum = 0;
-    let guard = 0;
+    const alt = {
+      level: 1,
+      xp: 0,
+      tickets: 0,
+      spent: 0,
+      refillSum: 0,
+    };
 
-    while (altLevel < endLevel && state.level < targetLevel && guard++ < MAX_SIM_DAYS * 50) {
+    let guard = 0;
+    while (alt.level < endLevel && state.level < targetLevel && guard++ < MAX_SIM_DAYS * 50) {
+      // 보유 티켓이 있으면 먼저 레벨업 각을 남기고 잉여는 본캐 단독
+      if (alt.tickets >= TERRA_COST) {
+        spendSurplusTicketsOnMain(
+          state,
+          alt,
+          endLevel,
+          maxTickets,
+          targetLevel,
+          useLevelUpTickets
+        );
+        if (state.level >= targetLevel) break;
+      }
+
       // 부캐 + 본캐 동시 테라
-      spent += TERRA_COST;
+      alt.spent += TERRA_COST;
       state.totalTicketsSpent += TERRA_COST;
       recordActivity(state, 'terra', 1);
+      if (alt.tickets >= TERRA_COST) {
+        alt.tickets -= TERRA_COST;
+      }
 
-      altTickets = Math.max(0, altTickets - TERRA_COST);
-      altXp += ACTIVITIES.terra.xp;
-      while (altLevel < endLevel && altXp >= xpToNext(altLevel)) {
-        altXp -= xpToNext(altLevel);
-        altLevel += 1;
-        if (shouldRefillTickets(altLevel, 'terra')) {
-          const before = altTickets;
-          altTickets = maxTickets;
-          refillSum += Math.max(0, altTickets - before);
+      alt.xp += ACTIVITIES.terra.xp;
+      while (alt.level < endLevel && alt.xp >= xpToNext(alt.level)) {
+        alt.xp -= xpToNext(alt.level);
+        alt.level += 1;
+        if (shouldRefillTickets(alt.level, 'terra')) {
+          refillAltTickets(alt, maxTickets);
+          // 충전 직후 바로 잉여 → 본캐 단독
+          spendSurplusTicketsOnMain(
+            state,
+            alt,
+            endLevel,
+            maxTickets,
+            targetLevel,
+            useLevelUpTickets
+          );
         }
-        if (altLevel >= endLevel) {
-          altXp = 0;
+        if (alt.level >= endLevel) {
+          alt.xp = 0;
           break;
         }
+        if (state.level >= targetLevel) break;
       }
 
       state.xp += ACTIVITIES.terra.xp;
       applyLevelUps(state, 'terra', targetLevel, maxTickets, useLevelUpTickets, 'terra');
     }
 
-    const netTickets = refillSum - spent;
-    if (netTickets > 0 && state.level < targetLevel) {
-      state.tickets += netTickets;
+    // 풀에 남은 티켓만 본캐 합류 (이미 단독/파티로 쓴 분은 제외)
+    if (alt.tickets > 0 && state.level < targetLevel) {
+      state.tickets += alt.tickets;
+      alt.tickets = 0;
       burnLevelUpTickets(state, targetLevel, maxTickets, useLevelUpTickets, 'terra');
     }
   }
