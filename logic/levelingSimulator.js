@@ -171,7 +171,9 @@ export function parsePvpRangeKey(key) {
 }
 
 /**
- * 부캐를 테라만으로 endLevel까지 육성. 회수 = 충전합 − 소비합.
+ * 티켓작 1사이클: 부캐 Lv1→endLevel 테라 육성.
+ * 각 테라 판은 부캐와 본캐가 함께 들어가 둘 다 XP를 받는다.
+ * 회수 티켓 = 부캐 레벨업 충전합 − 해당 사이클 테라 소비 티켓.
  */
 export function simulateAltTicketCraft(endLevel, ticketBoost) {
   const maxTickets = ticketCap(ticketBoost);
@@ -180,12 +182,14 @@ export function simulateAltTicketCraft(endLevel, ticketBoost) {
   let tickets = 0;
   let spent = 0;
   let refillSum = 0;
+  let terraRuns = 0;
 
   let guard = 0;
   while (level < endLevel && guard++ < MAX_SIM_DAYS * 50) {
     spent += TERRA_COST;
     tickets = Math.max(0, tickets - TERRA_COST);
     xp += ACTIVITIES.terra.xp;
+    terraRuns += 1;
 
     while (level < endLevel && xp >= xpToNext(level)) {
       xp -= xpToNext(level);
@@ -207,7 +211,59 @@ export function simulateAltTicketCraft(endLevel, ticketBoost) {
     spent,
     refillSum,
     endLevel: level,
+    terraRuns,
   };
+}
+
+/**
+ * 티켓작 사이클을 본캐 상태에 적용.
+ * 테라 1판마다 본캐도 50 XP를 얻고, 사이클 종료 후 순 회수 티켓을 본캐 풀에 합류시킨다.
+ */
+function runTicketCraftCycles(state, cycles, endLevel, ticketBoost, targetLevel, maxTickets, useLevelUpTickets) {
+  if (!useLevelUpTickets || cycles <= 0 || endLevel <= 1) return;
+
+  for (let i = 0; i < cycles; i++) {
+    if (state.level >= targetLevel) break;
+
+    let altLevel = 1;
+    let altXp = 0;
+    let altTickets = 0;
+    let spent = 0;
+    let refillSum = 0;
+    let guard = 0;
+
+    while (altLevel < endLevel && state.level < targetLevel && guard++ < MAX_SIM_DAYS * 50) {
+      // 부캐 + 본캐 동시 테라
+      spent += TERRA_COST;
+      state.totalTicketsSpent += TERRA_COST;
+      recordActivity(state, 'terra', 1);
+
+      altTickets = Math.max(0, altTickets - TERRA_COST);
+      altXp += ACTIVITIES.terra.xp;
+      while (altLevel < endLevel && altXp >= xpToNext(altLevel)) {
+        altXp -= xpToNext(altLevel);
+        altLevel += 1;
+        if (shouldRefillTickets(altLevel, 'terra')) {
+          const before = altTickets;
+          altTickets = maxTickets;
+          refillSum += Math.max(0, altTickets - before);
+        }
+        if (altLevel >= endLevel) {
+          altXp = 0;
+          break;
+        }
+      }
+
+      state.xp += ACTIVITIES.terra.xp;
+      applyLevelUps(state, 'terra', targetLevel, maxTickets, useLevelUpTickets);
+    }
+
+    const netTickets = refillSum - spent;
+    if (netTickets > 0 && state.level < targetLevel) {
+      state.tickets += netTickets;
+      burnLevelUpTickets(state, targetLevel, maxTickets, useLevelUpTickets);
+    }
+  }
 }
 
 function createState(currentLevel, currentXp) {
@@ -300,18 +356,6 @@ function applyXpBatch(state, xpAmount, activityId, targetLevel, maxTickets, useL
   if (units > 0) recordActivity(state, activityId, units);
   state.xp += xpAmount;
   applyLevelUps(state, activityId, targetLevel, maxTickets, useLevelUpTickets);
-}
-
-function runTicketCraftCycles(state, cycles, endLevel, ticketBoost, targetLevel, maxTickets, useLevelUpTickets) {
-  if (!useLevelUpTickets || cycles <= 0 || endLevel <= 1) return;
-  for (let i = 0; i < cycles; i++) {
-    if (state.level >= targetLevel) break;
-    const craft = simulateAltTicketCraft(endLevel, ticketBoost);
-    if (craft.netTickets > 0) {
-      state.tickets += craft.netTickets;
-      burnLevelUpTickets(state, targetLevel, maxTickets, useLevelUpTickets);
-    }
-  }
 }
 
 function runDirectDay(state, plan, targetLevel, maxTickets, useLevelUpTickets, pvpXp, pvpFights) {

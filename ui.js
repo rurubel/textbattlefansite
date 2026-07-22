@@ -691,7 +691,7 @@ function initLevelingCalculator() {
     return;
   }
 
-  fillLevelSelect(currentLevelEl, '', null, { allowEmpty: true, emptyLabel: '' });
+  fillLevelSelect(currentLevelEl, null, 1);
   fillLevelSelect(targetLevelEl, null, 80);
   fillLevelSelect(craftEndEl, null, 15);
 
@@ -717,10 +717,6 @@ function initLevelingCalculator() {
   }
 
   function updateRemainingXp() {
-    if (currentLevelEl.value === '' || currentXpEl.value.trim() === '') {
-      remainingEl.textContent = '';
-      return;
-    }
     const currentLevel = Number(currentLevelEl.value);
     const currentXp = Number(currentXpEl.value);
     const targetLevel = Number(targetLevelEl.value);
@@ -743,11 +739,9 @@ function initLevelingCalculator() {
   }
 
   function readInput() {
-    const levelRaw = currentLevelEl.value;
-    const xpRaw = currentXpEl.value.trim();
     return {
-      currentLevel: levelRaw === '' ? NaN : Number(levelRaw),
-      currentXp: xpRaw === '' ? NaN : Number(xpRaw),
+      currentLevel: Number(currentLevelEl.value),
+      currentXp: Number(currentXpEl.value),
       targetLevel: Number(targetLevelEl.value),
       mode: selectedMode(),
       ticketBoost: ticketBoostEl.checked,
