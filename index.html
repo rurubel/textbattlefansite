@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-mode="dark" data-palette="classic">
 <head>
   <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
@@ -12,6 +12,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>텍스트배틀 팬사이트</title>
+  <script>
+    (function () {
+      try {
+        var m = localStorage.getItem('tb_color_mode');
+        var p = localStorage.getItem('tb_palette');
+        if (m === 'light' || m === 'dark') document.documentElement.dataset.mode = m;
+        if (p === 'classic' || p === 'golden' || p === 'battlefield') {
+          document.documentElement.dataset.palette = p;
+        }
+        document.documentElement.style.colorScheme =
+          document.documentElement.dataset.mode === 'light' ? 'light' : 'dark';
+      } catch (e) {}
+    })();
+  </script>
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -30,6 +44,32 @@
       <button class="nav-btn" data-section="card-simulator" data-i18n="nav.cardSim">카드 시뮬레이터</button>
       <button class="nav-btn" data-section="characters" data-i18n="nav.characters">개발자 캐릭터 소개</button>
       <button class="nav-btn" data-section="guides" data-i18n="nav.guides">유저 공략 / 정보&칼럼</button>
+      <div class="theme-controls">
+        <button
+          type="button"
+          id="theme-mode-btn"
+          class="theme-mode-btn"
+          aria-label="라이트 모드로 전환"
+        >
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2.2M12 19.8V22M4.2 12H2M22 12h-2.2M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M20 13.5A7.5 7.5 0 1 1 10.5 4 6.2 6.2 0 0 0 20 13.5z"/>
+          </svg>
+        </button>
+        <label class="visually-hidden" for="theme-palette-select" data-i18n="theme.paletteAria">테마 색상</label>
+        <select
+          id="theme-palette-select"
+          class="theme-palette-select"
+          data-i18n-aria="theme.paletteAria"
+        >
+          <option value="classic" data-i18n="theme.classic">Classic</option>
+          <option value="golden" data-i18n="theme.golden">Golden</option>
+          <option value="battlefield" data-i18n="theme.battlefield">Battlefield</option>
+        </select>
+      </div>
       <div class="lang-switch">
         <span class="lang-globe" aria-hidden="true">
           <svg class="lang-globe-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">

@@ -4,10 +4,12 @@
 
 import { initRouter, navigate } from './router.js';
 import { initI18n } from './i18n.js';
+import { initTheme } from './theme.js';
 import { initUI } from './ui.js';
 
 function init() {
   initI18n();
+  initTheme();
 
   const navButtons = document.querySelectorAll('.nav-btn');
 

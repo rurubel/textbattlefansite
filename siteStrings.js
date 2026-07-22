@@ -285,6 +285,15 @@ export const MESSAGES = {
     footer: { text: '@TeamGurod · 텍스트배틀 팬사이트 · 컨늅 제작' },
     menu: { b1: '으에에엥', b2: '우클릭 네르지 마세요!' },
     lang: { aria: '언어 선택' },
+
+    theme: {
+      toLight: '라이트 모드로 전환',
+      toDark: '다크 모드로 전환',
+      paletteAria: '테마 색상',
+      classic: 'Classic',
+      golden: 'Golden',
+      battlefield: 'Battlefield',
+    },
   }),
 
   en: pack(COMMON_EN, {
@@ -543,6 +552,14 @@ export const MESSAGES = {
     footer: { text: '@TeamGurod · Text Battle fan site · by Coneip' },
     menu: { b1: 'Uwaaa', b2: 'Please do not right-click!' },
     lang: { aria: 'Language' },
+    theme: {
+      toLight: 'Switch to light mode',
+      toDark: 'Switch to dark mode',
+      paletteAria: 'Color theme',
+      classic: 'Classic',
+      golden: 'Golden',
+      battlefield: 'Battlefield',
+    },
   }),
 
   ja: pack(COMMON_JA, {
@@ -801,5 +818,13 @@ export const MESSAGES = {
     footer: { text: '@TeamGurod · テキストバトル ファンサイト · コニープ作' },
     menu: { b1: 'うぇええん', b2: '右クリックはやめてね！' },
     lang: { aria: '言語' },
+    theme: {
+      toLight: 'ライトモードに切替',
+      toDark: 'ダークモードに切替',
+      paletteAria: 'カラーテーマ',
+      classic: 'Classic',
+      golden: 'Golden',
+      battlefield: 'Battlefield',
+    },
   }),
 };
