@@ -132,67 +132,112 @@ html[data-palette='golden'][data-mode='light'] {
   --panel-ink: #2a2418;
 }
 
-/* Battlefield — steel / ember */
+/* Battlefield — in-game HUD (near-black panels + teal action + coral secondary) */
 html[data-palette='battlefield'][data-mode='dark'] {
-  --bg: #12141a;
-  --bg-elevated: #1a1e28;
-  --bg-header: rgba(18, 20, 26, 0.94);
-  --bg-pattern: radial-gradient(ellipse 70% 50% at 80% -5%, rgba(232, 93, 76, 0.16), transparent 55%),
-    radial-gradient(ellipse 55% 40% at 5% 20%, rgba(90, 120, 140, 0.14), transparent 50%),
-    linear-gradient(155deg, #12141a 0%, #171b24 48%, #0e1015 100%);
-  --surface: rgba(180, 200, 220, 0.06);
-  --surface-strong: rgba(0, 0, 0, 0.35);
-  --border: rgba(150, 170, 190, 0.16);
-  --border-strong: rgba(232, 93, 76, 0.5);
-  --text: #e8edf2;
-  --text-muted: rgba(232, 237, 242, 0.7);
-  --accent: #e85d4c;
-  --accent-hover: #ff7260;
-  --accent-soft: rgba(232, 93, 76, 0.14);
-  --nav: #171b22;
-  --nav-border: #2a3140;
-  --nav-hover: #3a2a28;
-  --btn: #1e2430;
-  --btn-hover: #4a90a8;
-  --btn-fg: #e8edf2;
-  --on-accent: #1a100e;
+  --bg: #0a0c10;
+  --bg-elevated: #12161c;
+  --bg-header: rgba(10, 12, 16, 0.94);
+  --bg-pattern: radial-gradient(ellipse 55% 40% at 12% 0%, rgba(0, 200, 150, 0.08), transparent 55%),
+    radial-gradient(ellipse 45% 35% at 92% 8%, rgba(232, 84, 76, 0.07), transparent 50%),
+    linear-gradient(180deg, #0c0f14 0%, #0a0c10 55%, #080a0d 100%);
+  --surface: #141920;
+  --surface-strong: #0e1217;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(0, 200, 150, 0.45);
+  --text: #f0f3f6;
+  --text-muted: rgba(210, 218, 228, 0.68);
+  --accent: #00c896;
+  --accent-hover: #1adfad;
+  --accent-soft: rgba(0, 200, 150, 0.14);
+  --nav: #1a2129;
+  --nav-border: rgba(255, 255, 255, 0.1);
+  --nav-hover: #243039;
+  --btn: #00a87e;
+  --btn-hover: #e85d4c;
+  --btn-fg: #ffffff;
+  --on-accent: #ffffff;
   --danger-soft: rgba(232, 93, 76, 0.16);
-  --focus: #e85d4c;
-  --shadow: 0 10px 36px rgba(0, 0, 0, 0.45);
+  --focus: #00c896;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   --stroke: transparent;
-  --panel-ink-bg: rgba(232, 237, 242, 0.95);
-  --panel-ink: #1a1e28;
+  --panel-ink-bg: #1a2129;
+  --panel-ink: #e8eef4;
 }
 
 html[data-palette='battlefield'][data-mode='light'] {
-  --bg: #e8eaee;
-  --bg-elevated: #f5f6f8;
-  --bg-header: rgba(245, 246, 248, 0.94);
-  --bg-pattern: radial-gradient(ellipse 60% 40% at 100% 0%, rgba(200, 70, 55, 0.1), transparent 50%),
-    radial-gradient(ellipse 50% 35% at 0% 10%, rgba(70, 100, 120, 0.1), transparent 45%),
-    linear-gradient(180deg, #f0f2f5 0%, #dde1e7 100%);
-  --surface: rgba(255, 255, 255, 0.8);
-  --surface-strong: rgba(255, 255, 255, 0.95);
-  --border: rgba(40, 50, 65, 0.12);
-  --border-strong: rgba(196, 70, 55, 0.4);
-  --text: #1a2030;
-  --text-muted: rgba(26, 32, 48, 0.65);
-  --accent: #c44637;
-  --accent-hover: #a3382c;
-  --accent-soft: rgba(196, 70, 55, 0.1);
+  --bg: #e6eaef;
+  --bg-elevated: #f3f5f7;
+  --bg-header: rgba(243, 245, 247, 0.94);
+  --bg-pattern: radial-gradient(ellipse 55% 40% at 10% 0%, rgba(0, 168, 126, 0.1), transparent 50%),
+    radial-gradient(ellipse 40% 30% at 100% 0%, rgba(200, 70, 55, 0.06), transparent 45%),
+    linear-gradient(180deg, #eef1f4 0%, #dde3ea 100%);
+  --surface: #ffffff;
+  --surface-strong: #f0f3f6;
+  --border: rgba(20, 30, 40, 0.12);
+  --border-strong: rgba(0, 150, 112, 0.4);
+  --text: #12171e;
+  --text-muted: rgba(18, 23, 30, 0.62);
+  --accent: #009e76;
+  --accent-hover: #007a5c;
+  --accent-soft: rgba(0, 158, 118, 0.12);
   --nav: #ffffff;
-  --nav-border: rgba(40, 50, 65, 0.14);
-  --nav-hover: #f0d9d5;
-  --btn: #1a2030;
-  --btn-hover: #3d6a7c;
-  --btn-fg: #f5f6f8;
+  --nav-border: rgba(20, 30, 40, 0.12);
+  --nav-hover: #d8f3ea;
+  --btn: #009e76;
+  --btn-hover: #d45042;
+  --btn-fg: #ffffff;
   --on-accent: #ffffff;
-  --danger-soft: rgba(196, 70, 55, 0.12);
-  --focus: #c44637;
-  --shadow: 0 10px 28px rgba(26, 32, 48, 0.08);
+  --danger-soft: rgba(212, 80, 66, 0.12);
+  --focus: #009e76;
+  --shadow: 0 8px 22px rgba(18, 23, 30, 0.08);
   --stroke: transparent;
   --panel-ink-bg: #ffffff;
-  --panel-ink: #1a2030;
+  --panel-ink: #12171e;
+}
+
+/* Battlefield HUD component polish */
+html[data-palette='battlefield'] .nav-btn {
+  border-radius: 10px;
+  border-width: 1px;
+}
+html[data-palette='battlefield'] .nav-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+html[data-palette='battlefield'] .card {
+  border-radius: 12px;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+html[data-palette='battlefield'][data-mode='dark'] .card {
+  background: #141920;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+html[data-palette='battlefield'] .btn {
+  border-radius: 10px;
+}
+html[data-palette='battlefield'] .btn-primary {
+  background: linear-gradient(180deg, #12d4a4 0%, #00a87e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+html[data-palette='battlefield'] .btn-primary:hover {
+  background: linear-gradient(180deg, #f07568 0%, #e85d4c 100%);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+html[data-palette='battlefield'] .result-highlight {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+html[data-palette='battlefield'] .guides-switch-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+html[data-palette='battlefield'] .theme-controls,
+html[data-palette='battlefield'] .lang-switch {
+  border-radius: 10px;
+  background: var(--surface-strong);
 }
 
 /* Defaults before JS (classic dark) */
