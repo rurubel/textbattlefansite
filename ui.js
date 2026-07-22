@@ -25,6 +25,7 @@ import {
   xpToNext,
   runLevelingSimulation,
   parsePvpRangeKey,
+  ACTIVITY_LOG_ORDER,
 } from './logic/levelingSimulator.js';
 import {
   ATTR_IDS,
@@ -625,16 +626,27 @@ function initAniEnhancementSimulator() {
 }
 
 // --- Leveling Calculator ---
-function fillLevelSelect(selectEl, selected, defaultValue) {
-  const current = selected ?? selectEl.value ?? String(defaultValue);
+function fillLevelSelect(selectEl, selected, defaultValue, options = {}) {
+  const { allowEmpty = false, emptyLabel = '' } = options;
+  const current = selected ?? selectEl.value ?? (allowEmpty ? '' : String(defaultValue));
   selectEl.innerHTML = '';
+  if (allowEmpty) {
+    const empty = document.createElement('option');
+    empty.value = '';
+    empty.textContent = emptyLabel;
+    selectEl.appendChild(empty);
+  }
   for (let level = MIN_LEVEL; level <= MAX_LEVEL; level++) {
     const opt = document.createElement('option');
     opt.value = String(level);
     opt.textContent = String(level);
     selectEl.appendChild(opt);
   }
-  const fallback = String(defaultValue);
+  if (allowEmpty && (current === '' || current == null)) {
+    selectEl.value = '';
+    return;
+  }
+  const fallback = allowEmpty ? '' : String(defaultValue);
   selectEl.value = [...selectEl.options].some((o) => o.value === current) ? current : fallback;
 }
 
@@ -679,6 +691,7 @@ function initLevelingCalculator() {
     return;
   }
 
+  fillLevelSelect(currentLevelEl, '', null, { allowEmpty: true, emptyLabel: '' });
   fillLevelSelect(targetLevelEl, null, 80);
   fillLevelSelect(craftEndEl, null, 15);
 
@@ -704,6 +717,10 @@ function initLevelingCalculator() {
   }
 
   function updateRemainingXp() {
+    if (currentLevelEl.value === '' || currentXpEl.value.trim() === '') {
+      remainingEl.textContent = '';
+      return;
+    }
     const currentLevel = Number(currentLevelEl.value);
     const currentXp = Number(currentXpEl.value);
     const targetLevel = Number(targetLevelEl.value);
@@ -716,10 +733,6 @@ function initLevelingCalculator() {
       remainingEl.textContent = '';
       return;
     }
-    if (currentLevel >= targetLevel) {
-      remainingEl.textContent = t('leveling.remainingXp', { xp: 0 });
-      return;
-    }
     const need = xpToNext(currentLevel);
     if (currentXp < 0 || (need > 0 && currentXp >= need)) {
       remainingEl.textContent = '';
@@ -730,9 +743,11 @@ function initLevelingCalculator() {
   }
 
   function readInput() {
+    const levelRaw = currentLevelEl.value;
+    const xpRaw = currentXpEl.value.trim();
     return {
-      currentLevel: Number(currentLevelEl.value),
-      currentXp: Number(currentXpEl.value),
+      currentLevel: levelRaw === '' ? NaN : Number(levelRaw),
+      currentXp: xpRaw === '' ? NaN : Number(xpRaw),
       targetLevel: Number(targetLevelEl.value),
       mode: selectedMode(),
       ticketBoost: ticketBoostEl.checked,
@@ -763,21 +778,46 @@ function initLevelingCalculator() {
     }
   }
 
+  function activityLabel(id) {
+    switch (id) {
+      case 'jode':
+        return t('leveling.actJode');
+      case 'rune':
+        return t('leveling.actRune');
+      case 'habit':
+        return t('leveling.actHabit');
+      case 'terra':
+        return t('leveling.actTerra');
+      case 'pvp1':
+        return t('leveling.actPvp');
+      default:
+        return id;
+    }
+  }
+
+  function formatActivityRecord(result) {
+    const join = t('leveling.rangeJoin');
+    const timesUnit = t('leveling.timesUnit');
+    const minCounts = result.activityCountsMin || {};
+    const maxCounts = result.activityCountsMax || {};
+    const lines = ACTIVITY_LOG_ORDER.filter(
+      (id) => (minCounts[id] || 0) > 0 || (maxCounts[id] || 0) > 0
+    ).map((id) => {
+      const countText = formatRangeValue(minCounts[id] || 0, maxCounts[id] || 0, join);
+      return `<li>${activityLabel(id)}: ${countText}${timesUnit}</li>`;
+    });
+    if (lines.length === 0) {
+      return `<p class="lv-record-empty">${t('leveling.recordEmpty')}</p>`;
+    }
+    return `<ul class="lv-record-list">${lines.join('')}</ul>`;
+  }
+
   function renderResult(result) {
     if (!result.ok) {
       resultEl.textContent = errorMessage(result.error);
       return;
     }
     const join = t('leveling.rangeJoin');
-    const daysUnit = t('leveling.daysUnit');
-    const inf = t('leveling.infinity');
-    const daysText =
-      formatRangeValue(
-        result.daysMin,
-        result.unboundedMax ? null : result.daysMax,
-        join,
-        inf
-      ) + daysUnit;
     const ticketsText = formatRangeValue(
       result.totalTicketsSpentMin,
       result.totalTicketsSpentMax,
@@ -789,13 +829,30 @@ function initLevelingCalculator() {
       join
     );
 
+    let daysHtml = '';
+    if (result.showDays) {
+      const daysUnit = t('leveling.daysUnit');
+      const inf = t('leveling.infinity');
+      const daysText =
+        formatRangeValue(
+          result.daysMin,
+          result.unboundedMax ? null : result.daysMax,
+          join,
+          inf
+        ) + daysUnit;
+      daysHtml = `<p><strong>${t('leveling.resDays')}</strong>: ${daysText}</p>`;
+    }
+
     resultEl.innerHTML = `
-      <p><strong>${t('leveling.resRemaining')}</strong>: ${result.remainingXp}</p>
-      <p><strong>${t('leveling.resDays')}</strong>: ${daysText}</p>
+      <p><strong>${t('leveling.resGained')}</strong>: ${result.gainedXp}</p>
+      ${daysHtml}
       <p><strong>${t('leveling.resTickets')}</strong>: ${ticketsText}</p>
       <p><strong>${t('leveling.resEntries')}</strong>: ${entriesText}</p>
-      <p><strong>${t('leveling.resLevelUps')}</strong>: ${result.levelUpCount}</p>
       <p><strong>${t('leveling.resTarget')}</strong>: ${result.targetLevel}</p>
+      <div class="lv-record">
+        <p><strong>${t('leveling.resRecord')}</strong></p>
+        ${formatActivityRecord(result)}
+      </div>
     `;
   }
 
@@ -809,7 +866,7 @@ function initLevelingCalculator() {
   });
   useLevelUpEl.addEventListener('change', updateVisibility);
   pvpRangeEl.addEventListener('change', updateVisibility);
-  currentLevelEl.addEventListener('input', updateRemainingXp);
+  currentLevelEl.addEventListener('change', updateRemainingXp);
   currentXpEl.addEventListener('input', updateRemainingXp);
   targetLevelEl.addEventListener('change', updateRemainingXp);
   calcBtn.addEventListener('click', onCalc);

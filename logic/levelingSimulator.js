@@ -92,6 +92,13 @@ export const ACTIVITIES = {
   rune: { xp: 300, tickets: 10, entries: 1 },
 };
 
+/** 기록 표시 순서 */
+export const ACTIVITY_LOG_ORDER = ['jode', 'rune', 'habit', 'terra', 'pvp1'];
+
+export function createEmptyActivityCounts() {
+  return { pvp1: 0, terra: 0, jode: 0, habit: 0, rune: 0 };
+}
+
 export const DAY_ACTIVITY_ORDER = ['ticketCraft', 'jode', 'rune', 'habit', 'terra', 'pvp1'];
 
 export const PVP_RANGES = {
@@ -212,7 +219,13 @@ function createState(currentLevel, currentXp) {
     totalEntriesSpent: 0,
     levelUpCount: 0,
     day: 0,
+    activityCounts: createEmptyActivityCounts(),
   };
+}
+
+function recordActivity(state, activityId, times = 1) {
+  if (!state.activityCounts[activityId]) state.activityCounts[activityId] = 0;
+  state.activityCounts[activityId] += times;
 }
 
 function refillToCap(state, maxTickets) {
@@ -275,14 +288,16 @@ function runActivity(state, activityId, targetLevel, maxTickets, useLevelUpTicke
     state.tickets = Math.max(0, state.tickets - activity.tickets);
   }
 
+  recordActivity(state, activityId, 1);
   state.xp += activity.xp;
   applyLevelUps(state, activityId, targetLevel, maxTickets, useLevelUpTickets);
 }
 
 function applyXpBatch(state, xpAmount, activityId, targetLevel, maxTickets, useLevelUpTickets, ticketCostPerUnit, units, entryCost = 0) {
-  if (state.level >= targetLevel || xpAmount <= 0 && units <= 0) return;
+  if (state.level >= targetLevel || (xpAmount <= 0 && units <= 0)) return;
   state.totalTicketsSpent += ticketCostPerUnit * units;
   state.totalEntriesSpent += entryCost * units;
+  if (units > 0) recordActivity(state, activityId, units);
   state.xp += xpAmount;
   applyLevelUps(state, activityId, targetLevel, maxTickets, useLevelUpTickets);
 }
@@ -459,14 +474,29 @@ function simulateOnce(input, pvpTrack) {
 function finalizeResult(state, startLevel, startXp, targetLevel, pvpTrack) {
   return {
     ok: true,
+    gainedXp: sumXpFrom(startLevel, startXp, targetLevel),
     remainingXp: sumXpFrom(startLevel, startXp, targetLevel),
     days: state.day,
     totalTicketsSpent: state.totalTicketsSpent,
     totalEntriesSpent: state.totalEntriesSpent,
     levelUpCount: state.levelUpCount,
+    activityCounts: { ...state.activityCounts },
     targetLevel,
     pvpTrack,
   };
+}
+
+function mergeActivityCountRange(a, b) {
+  const keys = new Set([...Object.keys(a || {}), ...Object.keys(b || {})]);
+  const min = createEmptyActivityCounts();
+  const max = createEmptyActivityCounts();
+  for (const key of keys) {
+    const va = a?.[key] || 0;
+    const vb = b?.[key] || 0;
+    min[key] = Math.min(va, vb);
+    max[key] = Math.max(va, vb);
+  }
+  return { activityCountsMin: min, activityCountsMax: max };
 }
 
 export function validateLevelingInput(input) {
@@ -500,7 +530,7 @@ export function validateLevelingInput(input) {
 }
 
 /**
- * @returns {{ ok, remainingXp, daysMin, daysMax, totalTicketsSpentMin, totalTicketsSpentMax, totalEntriesSpentMin, totalEntriesSpentMax, levelUpCount, targetLevel, hasRange, error? }}
+ * @returns {{ ok, gainedXp, daysMin, daysMax, totalTicketsSpentMin, totalTicketsSpentMax, totalEntriesSpentMin, totalEntriesSpentMax, activityCountsMin, activityCountsMax, targetLevel, mode, hasRange, showDays, error? }}
  */
 export function runLevelingSimulation(input) {
   const validation = validateLevelingInput(input);
@@ -508,12 +538,16 @@ export function runLevelingSimulation(input) {
     return {
       ok: false,
       error: validation.error,
+      gainedXp: 0,
       remainingXp: 0,
       targetLevel: input.targetLevel,
+      mode: input.mode,
+      showDays: input.mode === 'direct',
     };
   }
 
-  const remainingXp = sumXpFrom(input.currentLevel, input.currentXp, input.targetLevel);
+  const gainedXp = sumXpFrom(input.currentLevel, input.currentXp, input.targetLevel);
+  const showDays = input.mode === 'direct';
 
   if (input.mode === 'direct') {
     const range = parsePvpRangeKey(input.pvpRangeKey);
@@ -527,35 +561,48 @@ export function runLevelingSimulation(input) {
       const maxDaysResult = simulateOnce(input, 'maxDays');
 
       if (!minDaysResult.ok && !maxDaysResult.ok) {
-        return { ...minDaysResult, remainingXp };
+        return { ...minDaysResult, gainedXp, remainingXp: gainedXp, mode: input.mode, showDays };
       }
 
       // 구간 하한이 0이면 최대 소요일 트랙은 진행 불가 → 상한 무한
       if (minDaysResult.ok && !maxDaysResult.ok && maxDaysResult.error === 'noProgress') {
         return {
           ok: true,
-          remainingXp,
+          gainedXp,
+          remainingXp: gainedXp,
           daysMin: minDaysResult.days,
           daysMax: null,
           totalTicketsSpentMin: minDaysResult.totalTicketsSpent,
           totalTicketsSpentMax: minDaysResult.totalTicketsSpent,
           totalEntriesSpentMin: minDaysResult.totalEntriesSpent,
           totalEntriesSpentMax: minDaysResult.totalEntriesSpent,
-          levelUpCount: minDaysResult.levelUpCount,
+          activityCountsMin: { ...minDaysResult.activityCounts },
+          activityCountsMax: { ...minDaysResult.activityCounts },
           targetLevel: input.targetLevel,
           hasRange: true,
           unboundedMax: true,
+          mode: input.mode,
+          showDays,
         };
       }
 
-      if (!minDaysResult.ok) return { ...minDaysResult, remainingXp };
-      if (!maxDaysResult.ok) return { ...maxDaysResult, remainingXp };
+      if (!minDaysResult.ok) {
+        return { ...minDaysResult, gainedXp, remainingXp: gainedXp, mode: input.mode, showDays };
+      }
+      if (!maxDaysResult.ok) {
+        return { ...maxDaysResult, gainedXp, remainingXp: gainedXp, mode: input.mode, showDays };
+      }
 
       const daysA = minDaysResult.days;
       const daysB = maxDaysResult.days;
+      const counts = mergeActivityCountRange(
+        minDaysResult.activityCounts,
+        maxDaysResult.activityCounts
+      );
       return {
         ok: true,
-        remainingXp,
+        gainedXp,
+        remainingXp: gainedXp,
         daysMin: Math.min(daysA, daysB),
         daysMax: Math.max(daysA, daysB),
         totalTicketsSpentMin: Math.min(
@@ -574,28 +621,36 @@ export function runLevelingSimulation(input) {
           minDaysResult.totalEntriesSpent,
           maxDaysResult.totalEntriesSpent
         ),
-        levelUpCount: minDaysResult.levelUpCount,
+        ...counts,
         targetLevel: input.targetLevel,
         hasRange: daysA !== daysB,
         unboundedMax: false,
+        mode: input.mode,
+        showDays,
       };
     }
   }
 
   const result = simulateOnce(input, 'maxDays');
-  if (!result.ok) return { ...result, remainingXp };
+  if (!result.ok) {
+    return { ...result, gainedXp, remainingXp: gainedXp, mode: input.mode, showDays };
+  }
 
   return {
     ok: true,
-    remainingXp,
+    gainedXp,
+    remainingXp: gainedXp,
     daysMin: result.days,
     daysMax: result.days,
     totalTicketsSpentMin: result.totalTicketsSpent,
     totalTicketsSpentMax: result.totalTicketsSpent,
     totalEntriesSpentMin: result.totalEntriesSpent,
     totalEntriesSpentMax: result.totalEntriesSpent,
-    levelUpCount: result.levelUpCount,
+    activityCountsMin: { ...result.activityCounts },
+    activityCountsMax: { ...result.activityCounts },
     targetLevel: input.targetLevel,
     hasRange: false,
+    mode: input.mode,
+    showDays,
   };
 }
