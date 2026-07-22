@@ -3,8 +3,8 @@
  */
 export const answerWeights = {
   // Q1: 포지션 성능
-  top: { bruiser: 2, tank: 2, extreme_speed: 2, non_tank: 2 },
-  midlow: { min_speed: 2, extreme_atk: 2, atk_speed: 2, berserker: 2, atk_bruiser: 2, balance: 2 },
+  top: { bruiser: 2, tank: 2 },
+  midlow: { min_speed: 2, extreme_atk: 2, atk_speed: 2, berserker: 2, atk_bruiser: 2, balance: 2, non_tank: 2, extreme_speed: 2 },
   any: { bruiser: 1, tank: 1, extreme_speed: 1, min_speed: 1, extreme_atk: 1, atk_speed: 1, berserker: 1, atk_bruiser: 1, balance: 1, non_tank: 1 },
 
   // Q2: 스탯 선호
@@ -25,15 +25,15 @@ export const answerWeights = {
 
   // Q5: 승패 변수
   certain: { tank: 2, extreme_speed: 2, min_speed: 2, extreme_atk: 2, berserker: 2, atk_bruiser: 2, non_tank: 2 },
-  variable: { bruiser: 2 },
+  variable: { bruiser: 2, balance: 2 },
   q5_any: { bruiser: 1, tank: 1, extreme_speed: 1, min_speed: 1, extreme_atk: 1, atk_speed: 1, berserker: 1, atk_bruiser: 1, balance: 1, non_tank: 1 },
   both: { atk_speed: 2, balance: 2 },
 
   // Q6: 너프 의존도
-  nerf_yes: { bruiser: 2, extreme_speed: 2, atk_speed: 2, atk_bruiser: 2, balance: 2 },
-  nerf_no: { tank: 2, min_speed: 2, extreme_atk: 2, berserker: 2, non_tank: 2 },
+  nerf_yes: { bruiser: 2, extreme_speed: 2, atk_speed: 2, atk_bruiser: 2, balance: 2, min_speed: 2 },
+  nerf_no: { tank: 2, extreme_atk: 2, berserker: 2, non_tank: 2 },
 
   // Q7: 메타 영향
-  meta_yes: { tank: 2, extreme_speed: 2, extreme_atk: 2 },
-  meta_no: { bruiser: 2, min_speed: 2, atk_speed: 2, berserker: 2, atk_bruiser: 2, balance: 2, non_tank: 2 },
+  meta_yes: { tank: 2, extreme_speed: 2, extreme_atk: 2, min_speed: 2, atk_speed: 2, berserker: 2, non_tank: 2 },
+  meta_no: { bruiser: 2, atk_bruiser: 2, balance: 2 },
 };
