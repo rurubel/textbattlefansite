@@ -19,6 +19,14 @@ import {
   MAX_PICKAXE_TRIGGER_OPTIONS,
 } from './logic/aniEnhancementSimulator.js';
 import {
+  MAX_LEVEL,
+  MIN_LEVEL,
+  sumXpFrom,
+  xpToNext,
+  runLevelingSimulation,
+  parsePvpRangeKey,
+} from './logic/levelingSimulator.js';
+import {
   ATTR_IDS,
   parseOptionalNumber,
   validateAttributeCalcInput,
@@ -616,6 +624,208 @@ function initAniEnhancementSimulator() {
   });
 }
 
+// --- Leveling Calculator ---
+function fillLevelSelect(selectEl, selected, defaultValue) {
+  const current = selected ?? selectEl.value ?? String(defaultValue);
+  selectEl.innerHTML = '';
+  for (let level = MIN_LEVEL; level <= MAX_LEVEL; level++) {
+    const opt = document.createElement('option');
+    opt.value = String(level);
+    opt.textContent = String(level);
+    selectEl.appendChild(opt);
+  }
+  const fallback = String(defaultValue);
+  selectEl.value = [...selectEl.options].some((o) => o.value === current) ? current : fallback;
+}
+
+function formatRangeValue(min, max, join, infinityLabel) {
+  if (max == null && infinityLabel) return `${min}${join}${infinityLabel}`;
+  if (min === max) return String(min);
+  return `${min}${join}${max}`;
+}
+
+function initLevelingCalculator() {
+  const currentLevelEl = document.getElementById('lv-current-level');
+  const currentXpEl = document.getElementById('lv-current-xp');
+  const targetLevelEl = document.getElementById('lv-target-level');
+  const remainingEl = document.getElementById('lv-remaining-xp');
+  const directFields = document.getElementById('lv-direct-fields');
+  const craftFields = document.getElementById('lv-ticket-craft-fields');
+  const goblinGroup = document.getElementById('lv-goblin-group');
+  const ticketBoostEl = document.getElementById('lv-ticket-boost');
+  const useLevelUpEl = document.getElementById('lv-use-levelup-tickets');
+  const terraEl = document.getElementById('lv-terra');
+  const jodeEl = document.getElementById('lv-jode');
+  const habitEl = document.getElementById('lv-habit');
+  const runeEl = document.getElementById('lv-rune');
+  const pvpRangeEl = document.getElementById('lv-pvp-range');
+  const includeGoblinEl = document.getElementById('lv-include-goblin');
+  const craftCountEl = document.getElementById('lv-craft-count');
+  const craftEndEl = document.getElementById('lv-craft-end');
+  const calcBtn = document.getElementById('lv-calc-btn');
+  const resultEl = document.getElementById('leveling-result');
+
+  if (
+    !currentLevelEl ||
+    !currentXpEl ||
+    !targetLevelEl ||
+    !remainingEl ||
+    !directFields ||
+    !craftFields ||
+    !goblinGroup ||
+    !calcBtn ||
+    !resultEl
+  ) {
+    return;
+  }
+
+  fillLevelSelect(targetLevelEl, null, 80);
+  fillLevelSelect(craftEndEl, null, 15);
+
+  function selectedMode() {
+    const checked = document.querySelector('input[name="lv-mode"]:checked');
+    return checked ? checked.value : 'direct';
+  }
+
+  function updateVisibility() {
+    const mode = selectedMode();
+    const isDirect = mode === 'direct';
+    directFields.classList.toggle('hidden', !isDirect);
+
+    const useTickets = useLevelUpEl.checked;
+    craftFields.classList.toggle('hidden', !isDirect || !useTickets);
+    craftCountEl.disabled = !useTickets;
+    craftEndEl.disabled = !useTickets;
+
+    const range = parsePvpRangeKey(pvpRangeEl.value);
+    const showGoblin = isDirect && range.max > 0;
+    goblinGroup.classList.toggle('hidden', !showGoblin);
+    if (!showGoblin) includeGoblinEl.checked = false;
+  }
+
+  function updateRemainingXp() {
+    const currentLevel = Number(currentLevelEl.value);
+    const currentXp = Number(currentXpEl.value);
+    const targetLevel = Number(targetLevelEl.value);
+    if (
+      !Number.isFinite(currentLevel) ||
+      !Number.isFinite(currentXp) ||
+      !Number.isFinite(targetLevel) ||
+      !(currentLevel < targetLevel)
+    ) {
+      remainingEl.textContent = '';
+      return;
+    }
+    if (currentLevel >= targetLevel) {
+      remainingEl.textContent = t('leveling.remainingXp', { xp: 0 });
+      return;
+    }
+    const need = xpToNext(currentLevel);
+    if (currentXp < 0 || (need > 0 && currentXp >= need)) {
+      remainingEl.textContent = '';
+      return;
+    }
+    const xp = sumXpFrom(currentLevel, currentXp, targetLevel);
+    remainingEl.textContent = t('leveling.remainingXp', { xp });
+  }
+
+  function readInput() {
+    return {
+      currentLevel: Number(currentLevelEl.value),
+      currentXp: Number(currentXpEl.value),
+      targetLevel: Number(targetLevelEl.value),
+      mode: selectedMode(),
+      ticketBoost: ticketBoostEl.checked,
+      useLevelUpTickets: useLevelUpEl.checked,
+      includeGoblin: includeGoblinEl.checked,
+      pvpRangeKey: pvpRangeEl.value,
+      terraCount: Math.max(0, Number(terraEl.value) || 0),
+      jodeCount: Math.max(0, Number(jodeEl.value) || 0),
+      habitCount: Math.max(0, Number(habitEl.value) || 0),
+      runeCount: Math.max(0, Number(runeEl.value) || 0),
+      ticketCraftCount: Math.max(0, Number(craftCountEl.value) || 0),
+      ticketCraftEndLevel: Number(craftEndEl.value) || 15,
+    };
+  }
+
+  function errorMessage(code) {
+    switch (code) {
+      case 'levelOrder':
+        return t('leveling.errLevelOrder');
+      case 'xpRange':
+        return t('leveling.errXpRange');
+      case 'noProgress':
+        return t('leveling.errNoProgress');
+      case 'maxDays':
+        return t('leveling.errMaxDays');
+      default:
+        return t('leveling.errInvalid');
+    }
+  }
+
+  function renderResult(result) {
+    if (!result.ok) {
+      resultEl.textContent = errorMessage(result.error);
+      return;
+    }
+    const join = t('leveling.rangeJoin');
+    const daysUnit = t('leveling.daysUnit');
+    const inf = t('leveling.infinity');
+    const daysText =
+      formatRangeValue(
+        result.daysMin,
+        result.unboundedMax ? null : result.daysMax,
+        join,
+        inf
+      ) + daysUnit;
+    const ticketsText = formatRangeValue(
+      result.totalTicketsSpentMin,
+      result.totalTicketsSpentMax,
+      join
+    );
+    const entriesText = formatRangeValue(
+      result.totalEntriesSpentMin,
+      result.totalEntriesSpentMax,
+      join
+    );
+
+    resultEl.innerHTML = `
+      <p><strong>${t('leveling.resRemaining')}</strong>: ${result.remainingXp}</p>
+      <p><strong>${t('leveling.resDays')}</strong>: ${daysText}</p>
+      <p><strong>${t('leveling.resTickets')}</strong>: ${ticketsText}</p>
+      <p><strong>${t('leveling.resEntries')}</strong>: ${entriesText}</p>
+      <p><strong>${t('leveling.resLevelUps')}</strong>: ${result.levelUpCount}</p>
+      <p><strong>${t('leveling.resTarget')}</strong>: ${result.targetLevel}</p>
+    `;
+  }
+
+  function onCalc() {
+    const result = runLevelingSimulation(readInput());
+    renderResult(result);
+  }
+
+  document.querySelectorAll('input[name="lv-mode"]').forEach((el) => {
+    el.addEventListener('change', updateVisibility);
+  });
+  useLevelUpEl.addEventListener('change', updateVisibility);
+  pvpRangeEl.addEventListener('change', updateVisibility);
+  currentLevelEl.addEventListener('input', updateRemainingXp);
+  currentXpEl.addEventListener('input', updateRemainingXp);
+  targetLevelEl.addEventListener('change', updateRemainingXp);
+  calcBtn.addEventListener('click', onCalc);
+
+  updateVisibility();
+  updateRemainingXp();
+  resultEl.textContent = t('common.resultPlaceholder');
+
+  localeRefreshers.push(() => {
+    updateRemainingXp();
+    if (!resultEl.querySelector('p')) {
+      resultEl.textContent = t('common.resultPlaceholder');
+    }
+  });
+}
+
 // --- Characters ---
 function initCharacters() {
   let currentIndex = 1;
@@ -924,6 +1134,7 @@ export function initUI() {
   initAttributeCalculator();
   initProbabilityCalc();
   initAniEnhancementSimulator();
+  initLevelingCalculator();
   initPositionTest();
   initCardSimulator();
   initCharacters();
@@ -931,4 +1142,6 @@ export function initUI() {
 
   document.getElementById('prob-result').textContent = t('common.resultPlaceholder');
   document.getElementById('ani-result').textContent = t('common.resultPlaceholder');
+  const lvResult = document.getElementById('leveling-result');
+  if (lvResult) lvResult.textContent = t('common.resultPlaceholder');
 }

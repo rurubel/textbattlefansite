@@ -373,6 +373,41 @@ body {
   opacity: 0.5;
 }
 
+/* Leveling calculator */
+.lv-fieldset {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem 1rem 1rem;
+  margin: 0 0 1rem;
+}
+.lv-fieldset legend {
+  padding: 0 0.35rem;
+  color: #fff;
+  font-size: 0.9rem;
+}
+.lv-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.lv-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #fff;
+}
+.lv-radio input {
+  width: auto;
+  accent-color: #0FBF7F;
+}
+#lv-direct-fields.hidden,
+#lv-ticket-craft-fields.hidden,
+#lv-goblin-group.hidden {
+  display: none;
+}
+
 /* Position Test */
 .question-card {
   padding: 1rem 0;

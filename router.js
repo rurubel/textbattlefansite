@@ -9,6 +9,7 @@ const sections = [
   'position-test',
   'card-simulator',
   'characters',
+  'leveling',
 ];
 
 export function initRouter(navButtons, onNavigate) {
