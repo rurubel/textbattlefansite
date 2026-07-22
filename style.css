@@ -787,7 +787,7 @@ html[data-mode='light'] .theme-mode-btn .icon-moon { display: block; }
 }
 .guides-switch-btn.active {
   background: var(--btn);
-  color: var(--text);
+  color: var(--btn-fg);
 }
 .guides-list {
   list-style: none;
