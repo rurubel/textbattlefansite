@@ -752,7 +752,7 @@ function initLevelingCalculator() {
       jodeCount: Math.max(0, Number(jodeEl.value) || 0),
       habitCount: Math.max(0, Number(habitEl.value) || 0),
       runeCount: Math.max(0, Number(runeEl.value) || 0),
-      ticketCraftCount: Math.max(0, Number(craftCountEl.value) || 0),
+      ticketCraftCount: Math.min(5, Math.max(0, Number(craftCountEl.value) || 0)),
       ticketCraftEndLevel: Number(craftEndEl.value) || 15,
     };
   }

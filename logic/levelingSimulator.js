@@ -113,6 +113,12 @@ export const PVP_RANGES = {
 export const GOBLIN_XP_MIN = 300;
 export const GOBLIN_XP_MAX = 600;
 
+/** 프리셋 전부 1vs1 고블린 */
+export const PRESET_PVP_GOBLIN_TICKET_THRESHOLD = 2400;
+export const PRESET_PVP_GOBLIN_COUNT = 15;
+/** 소비 티켓 ≤ 2400일 때 고블린 마릿수 하한 */
+export const PRESET_PVP_GOBLIN_COUNT_LOW = 10;
+
 const MAX_SIM_DAYS = 100000;
 const TERRA_COST = ACTIVITIES.terra.tickets;
 
@@ -255,13 +261,13 @@ function runTicketCraftCycles(state, cycles, endLevel, ticketBoost, targetLevel,
       }
 
       state.xp += ACTIVITIES.terra.xp;
-      applyLevelUps(state, 'terra', targetLevel, maxTickets, useLevelUpTickets);
+      applyLevelUps(state, 'terra', targetLevel, maxTickets, useLevelUpTickets, 'terra');
     }
 
     const netTickets = refillSum - spent;
     if (netTickets > 0 && state.level < targetLevel) {
       state.tickets += netTickets;
-      burnLevelUpTickets(state, targetLevel, maxTickets, useLevelUpTickets);
+      burnLevelUpTickets(state, targetLevel, maxTickets, useLevelUpTickets, 'terra');
     }
   }
 }
@@ -290,17 +296,27 @@ function refillToCap(state, maxTickets) {
   return Math.max(0, state.tickets - before);
 }
 
-function burnLevelUpTickets(state, targetLevel, maxTickets, useLevelUpTickets) {
+/** 직접 입력·티켓작 = 테라, 프리셋 = 선택 콘텐츠(습던만 테라) */
+export function resolveBurnActivityId(mode) {
+  if (!mode || mode === 'direct') return 'terra';
+  if (mode === 'habit') return 'terra';
+  return mode;
+}
+
+function burnLevelUpTickets(state, targetLevel, maxTickets, useLevelUpTickets, burnId = 'terra') {
   if (!useLevelUpTickets) return;
-  while (state.level < targetLevel && state.tickets >= TERRA_COST) {
-    runActivity(state, 'terra', targetLevel, maxTickets, useLevelUpTickets, {
+  const burn = ACTIVITIES[burnId];
+  if (!burn) return;
+  while (state.level < targetLevel && state.tickets >= burn.tickets) {
+    runActivity(state, burnId, targetLevel, maxTickets, useLevelUpTickets, {
       countSpend: true,
       consumeFromPool: true,
+      burnActivityId: burnId,
     });
   }
 }
 
-function applyLevelUps(state, activityId, targetLevel, maxTickets, useLevelUpTickets) {
+function applyLevelUps(state, activityId, targetLevel, maxTickets, useLevelUpTickets, burnId = 'terra') {
   while (state.level < targetLevel && state.xp >= xpToNext(state.level)) {
     state.xp -= xpToNext(state.level);
     state.level += 1;
@@ -311,7 +327,7 @@ function applyLevelUps(state, activityId, targetLevel, maxTickets, useLevelUpTic
     }
     if (shouldRefillTickets(state.level, activityId)) {
       refillToCap(state, maxTickets);
-      burnLevelUpTickets(state, targetLevel, maxTickets, useLevelUpTickets);
+      burnLevelUpTickets(state, targetLevel, maxTickets, useLevelUpTickets, burnId);
     }
   }
 }
@@ -320,17 +336,17 @@ function runActivity(state, activityId, targetLevel, maxTickets, useLevelUpTicke
   if (state.level >= targetLevel) return;
   const activity = ACTIVITIES[activityId];
   if (!activity) return;
+  const burnId = opts.burnActivityId || 'terra';
 
   const need = xpToNext(state.level) - state.xp;
   const wouldLevelUp = activity.xp >= need;
 
   // 습던 + 레벨업 티켓 사용 ON: 레벨업을 유발하면 테라로 대체
-  if (
-    activityId === 'habit' &&
-    useLevelUpTickets &&
-    wouldLevelUp
-  ) {
-    runActivity(state, 'terra', targetLevel, maxTickets, useLevelUpTickets, opts);
+  if (activityId === 'habit' && useLevelUpTickets && wouldLevelUp) {
+    runActivity(state, 'terra', targetLevel, maxTickets, useLevelUpTickets, {
+      ...opts,
+      burnActivityId: burnId,
+    });
     return;
   }
 
@@ -339,23 +355,35 @@ function runActivity(state, activityId, targetLevel, maxTickets, useLevelUpTicke
     state.totalEntriesSpent += activity.entries;
   }
 
-  // 일일 계획 티켓은 무한 — 보유 tickets 풀은 레벨업 충전/티켓작 회수용
   if (opts.consumeFromPool) {
     state.tickets = Math.max(0, state.tickets - activity.tickets);
   }
 
   recordActivity(state, activityId, 1);
   state.xp += activity.xp;
-  applyLevelUps(state, activityId, targetLevel, maxTickets, useLevelUpTickets);
+  applyLevelUps(state, activityId, targetLevel, maxTickets, useLevelUpTickets, burnId);
 }
 
-function applyXpBatch(state, xpAmount, activityId, targetLevel, maxTickets, useLevelUpTickets, ticketCostPerUnit, units, entryCost = 0) {
+/** 티켓/기록은 activityId 기준, XP만 커스텀 (고블린 등) */
+function runActivityWithXp(state, activityId, xp, targetLevel, maxTickets, useLevelUpTickets, burnId) {
+  if (state.level >= targetLevel) return;
+  const activity = ACTIVITIES[activityId];
+  if (!activity) return;
+
+  state.totalTicketsSpent += activity.tickets;
+  state.totalEntriesSpent += activity.entries;
+  recordActivity(state, activityId, 1);
+  state.xp += xp;
+  applyLevelUps(state, activityId, targetLevel, maxTickets, useLevelUpTickets, burnId);
+}
+
+function applyXpBatch(state, xpAmount, activityId, targetLevel, maxTickets, useLevelUpTickets, ticketCostPerUnit, units, entryCost = 0, burnId = 'terra') {
   if (state.level >= targetLevel || (xpAmount <= 0 && units <= 0)) return;
   state.totalTicketsSpent += ticketCostPerUnit * units;
   state.totalEntriesSpent += entryCost * units;
   if (units > 0) recordActivity(state, activityId, units);
   state.xp += xpAmount;
-  applyLevelUps(state, activityId, targetLevel, maxTickets, useLevelUpTickets);
+  applyLevelUps(state, activityId, targetLevel, maxTickets, useLevelUpTickets, burnId);
 }
 
 function runDirectDay(state, plan, targetLevel, maxTickets, useLevelUpTickets, pvpXp, pvpFights) {
@@ -368,6 +396,8 @@ function runDirectDay(state, plan, targetLevel, maxTickets, useLevelUpTickets, p
     habitCount,
     runeCount,
   } = plan;
+  const burnId = 'terra';
+  const actOpts = { burnActivityId: burnId };
 
   runTicketCraftCycles(
     state,
@@ -380,16 +410,16 @@ function runDirectDay(state, plan, targetLevel, maxTickets, useLevelUpTickets, p
   );
 
   for (let i = 0; i < jodeCount && state.level < targetLevel; i++) {
-    runActivity(state, 'jode', targetLevel, maxTickets, useLevelUpTickets);
+    runActivity(state, 'jode', targetLevel, maxTickets, useLevelUpTickets, actOpts);
   }
   for (let i = 0; i < runeCount && state.level < targetLevel; i++) {
-    runActivity(state, 'rune', targetLevel, maxTickets, useLevelUpTickets);
+    runActivity(state, 'rune', targetLevel, maxTickets, useLevelUpTickets, actOpts);
   }
   for (let i = 0; i < habitCount && state.level < targetLevel; i++) {
-    runActivity(state, 'habit', targetLevel, maxTickets, useLevelUpTickets);
+    runActivity(state, 'habit', targetLevel, maxTickets, useLevelUpTickets, actOpts);
   }
   for (let i = 0; i < terraCount && state.level < targetLevel; i++) {
-    runActivity(state, 'terra', targetLevel, maxTickets, useLevelUpTickets);
+    runActivity(state, 'terra', targetLevel, maxTickets, useLevelUpTickets, actOpts);
   }
 
   if (pvpFights > 0 && state.level < targetLevel) {
@@ -402,15 +432,42 @@ function runDirectDay(state, plan, targetLevel, maxTickets, useLevelUpTickets, p
       useLevelUpTickets,
       ACTIVITIES.pvp1.tickets,
       pvpFights,
-      0
+      0,
+      burnId
     );
   }
 }
 
-function runPresetUntilTarget(state, activityId, targetLevel, maxTickets, useLevelUpTickets) {
+function runPresetUntilTarget(state, activityId, targetLevel, maxTickets, useLevelUpTickets, burnId, presetGoblin = null) {
   let guard = 0;
-  while (state.level < targetLevel && guard++ < MAX_SIM_DAYS * 200) {
-    runActivity(state, activityId, targetLevel, maxTickets, useLevelUpTickets);
+  if (activityId === 'pvp1') {
+    const goblinCount = presetGoblin?.count ?? 0;
+    const goblinXp = presetGoblin?.xp ?? GOBLIN_XP_MIN;
+    let goblinsLeft = goblinCount;
+    while (state.level < targetLevel && guard++ < MAX_SIM_DAYS * 200) {
+      if (goblinsLeft > 0) {
+        runActivityWithXp(
+          state,
+          'pvp1',
+          goblinXp,
+          targetLevel,
+          maxTickets,
+          useLevelUpTickets,
+          burnId
+        );
+        goblinsLeft -= 1;
+      } else {
+        runActivity(state, 'pvp1', targetLevel, maxTickets, useLevelUpTickets, {
+          burnActivityId: burnId,
+        });
+      }
+    }
+  } else {
+    while (state.level < targetLevel && guard++ < MAX_SIM_DAYS * 200) {
+      runActivity(state, activityId, targetLevel, maxTickets, useLevelUpTickets, {
+        burnActivityId: burnId,
+      });
+    }
   }
   state.day = 1;
 }
@@ -431,6 +488,7 @@ function simulateOnce(input, pvpTrack) {
     runeCount,
     ticketCraftCount,
     ticketCraftEndLevel,
+    presetGoblin = null,
   } = input;
 
   const maxTickets = ticketCap(ticketBoost);
@@ -439,7 +497,16 @@ function simulateOnce(input, pvpTrack) {
 
   if (mode !== 'direct') {
     const activityId = mode; // jode | habit | terra | rune | pvp1
-    runPresetUntilTarget(state, activityId, targetLevel, maxTickets, useLevelUpTickets);
+    const burnId = resolveBurnActivityId(mode);
+    runPresetUntilTarget(
+      state,
+      activityId,
+      targetLevel,
+      maxTickets,
+      useLevelUpTickets,
+      burnId,
+      mode === 'pvp1' ? presetGoblin : null
+    );
     return finalizeResult(state, startLevel, currentXp, targetLevel, null);
   }
 
@@ -673,6 +740,81 @@ export function runLevelingSimulation(input) {
         showDays,
       };
     }
+  }
+
+  // 프리셋 전부 1vs1 고블린:
+  // - 소비 티켓 ≤ 2400 → 고블린 10~15마리 (XP 300~600)
+  // - 소비 티켓 > 2400 → 고블린 15마리 (XP 300~600)
+  if (input.mode === 'pvp1') {
+    const probe = simulateOnce({ ...input, presetGoblin: null }, 'maxDays');
+    if (!probe.ok) {
+      return { ...probe, gainedXp, remainingXp: gainedXp, mode: input.mode, showDays };
+    }
+
+    const lowTicketBand =
+      probe.totalTicketsSpent <= PRESET_PVP_GOBLIN_TICKET_THRESHOLD;
+    const goblinCountForMaxDays = lowTicketBand
+      ? PRESET_PVP_GOBLIN_COUNT_LOW
+      : PRESET_PVP_GOBLIN_COUNT;
+    const goblinCountForMinDays = PRESET_PVP_GOBLIN_COUNT;
+
+    const minDaysResult = simulateOnce(
+      {
+        ...input,
+        presetGoblin: { count: goblinCountForMinDays, xp: GOBLIN_XP_MAX },
+      },
+      'minDays'
+    );
+    const maxDaysResult = simulateOnce(
+      {
+        ...input,
+        presetGoblin: { count: goblinCountForMaxDays, xp: GOBLIN_XP_MIN },
+      },
+      'maxDays'
+    );
+    if (!minDaysResult.ok) {
+      return { ...minDaysResult, gainedXp, remainingXp: gainedXp, mode: input.mode, showDays };
+    }
+    if (!maxDaysResult.ok) {
+      return { ...maxDaysResult, gainedXp, remainingXp: gainedXp, mode: input.mode, showDays };
+    }
+
+    const counts = mergeActivityCountRange(
+      minDaysResult.activityCounts,
+      maxDaysResult.activityCounts
+    );
+    return {
+      ok: true,
+      gainedXp,
+      remainingXp: gainedXp,
+      daysMin: 1,
+      daysMax: 1,
+      totalTicketsSpentMin: Math.min(
+        minDaysResult.totalTicketsSpent,
+        maxDaysResult.totalTicketsSpent
+      ),
+      totalTicketsSpentMax: Math.max(
+        minDaysResult.totalTicketsSpent,
+        maxDaysResult.totalTicketsSpent
+      ),
+      totalEntriesSpentMin: Math.min(
+        minDaysResult.totalEntriesSpent,
+        maxDaysResult.totalEntriesSpent
+      ),
+      totalEntriesSpentMax: Math.max(
+        minDaysResult.totalEntriesSpent,
+        maxDaysResult.totalEntriesSpent
+      ),
+      ...counts,
+      targetLevel: input.targetLevel,
+      hasRange:
+        minDaysResult.totalTicketsSpent !== maxDaysResult.totalTicketsSpent,
+      mode: input.mode,
+      showDays,
+      presetGoblinsApplied: true,
+      presetGoblinCountMin: goblinCountForMaxDays,
+      presetGoblinCountMax: goblinCountForMinDays,
+    };
   }
 
   const result = simulateOnce(input, 'maxDays');

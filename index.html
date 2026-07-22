@@ -334,7 +334,14 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="lv-craft-count" data-i18n="leveling.craftCount">하루 티켓작 횟수</label>
-                <input type="number" id="lv-craft-count" value="5" min="0">
+                <select id="lv-craft-count">
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5" selected>5</option>
+                </select>
               </div>
               <div class="form-group">
                 <label for="lv-craft-end" data-i18n="leveling.craftEnd">티켓작 종료 레벨</label>
