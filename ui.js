@@ -14,6 +14,7 @@ import {
 } from './logic/probability.js';
 import { getQuestions, calculatePosition } from './logic/testLogic.js';
 import { characters } from './characters.js';
+import { GUIDE_ITEMS, COLUMN_ITEMS } from './guides.js';
 import {
   runAniEnhancementSimulation,
   MAX_PICKAXE_TRIGGER_OPTIONS,
@@ -877,6 +878,49 @@ function initLevelingCalculator() {
   });
 }
 
+// --- User guides / columns ---
+function initGuides() {
+  const listEl = document.getElementById('guides-list');
+  const switchEl = document.querySelector('.guides-switch');
+  if (!listEl || !switchEl) return;
+
+  let activeTab = 'guide';
+
+  function renderList() {
+    const items = activeTab === 'guide' ? GUIDE_ITEMS : COLUMN_ITEMS;
+    listEl.innerHTML = items
+      .map(
+        (item) => `
+      <li class="guides-item">
+        <a class="guides-link" href="${item.url}" target="_blank" rel="noopener noreferrer">
+          <span class="guides-link-title">${t(item.titleKey)}</span>
+          <span class="guides-link-author">${t('guides.authorBy', { name: item.author })}</span>
+        </a>
+      </li>`
+      )
+      .join('');
+  }
+
+  function setTab(tab) {
+    activeTab = tab;
+    switchEl.querySelectorAll('.guides-switch-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.guidesTab === tab);
+    });
+    renderList();
+  }
+
+  switchEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('.guides-switch-btn');
+    if (!btn || !btn.dataset.guidesTab) return;
+    setTab(btn.dataset.guidesTab);
+  });
+
+  setTab('guide');
+  localeRefreshers.push(() => {
+    renderList();
+  });
+}
+
 // --- Characters ---
 function initCharacters() {
   let currentIndex = 1;
@@ -1189,6 +1233,7 @@ export function initUI() {
   initPositionTest();
   initCardSimulator();
   initCharacters();
+  initGuides();
   initMobileMenu();
 
   document.getElementById('prob-result').textContent = t('common.resultPlaceholder');

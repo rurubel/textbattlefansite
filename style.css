@@ -422,6 +422,79 @@ body {
   opacity: 0.85;
 }
 
+/* User guides / columns */
+.guides-switch {
+  display: inline-flex;
+  gap: 0;
+  margin: 0.5rem 0 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.guides-switch-btn {
+  border: none;
+  background: rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.75);
+  padding: 0.55rem 1.1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.guides-switch-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+.guides-switch-btn.active {
+  background: #141A26;
+  color: #fff;
+}
+.guides-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: guides;
+}
+.guides-list .guides-item {
+  padding: 0;
+  padding-left: 0;
+  margin: 0 0 0.65rem;
+  position: relative;
+  counter-increment: guides;
+}
+.guides-list .guides-item::before {
+  content: none;
+}
+.guides-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+  text-decoration: none;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+.guides-link:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(15, 191, 127, 0.12);
+  transform: translateY(-1px);
+}
+.guides-link-title::before {
+  content: counter(guides) '. ';
+  opacity: 0.85;
+}
+.guides-link-title {
+  font-weight: 600;
+  line-height: 1.4;
+}
+.guides-link-author {
+  font-size: 0.88rem;
+  opacity: 0.8;
+}
+
 /* Position Test */
 .question-card {
   padding: 1rem 0;

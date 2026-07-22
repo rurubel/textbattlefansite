@@ -10,6 +10,7 @@ const sections = [
   'card-simulator',
   'characters',
   'leveling',
+  'guides',
 ];
 
 export function initRouter(navButtons, onNavigate) {
