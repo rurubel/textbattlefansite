@@ -275,7 +275,7 @@ export const MESSAGES = {
     card: {
       title: '카드 시뮬레이터',
       roll: '5성 카드 뽑기',
-      foot: '타 유저분의 확률 통계표를 참고 했습니다.',
+      foot: '흰 40% 초 25% 파 20% 보 10% 황 5%',
     },
     characters: {
       title: '개발자 캐릭터 소개',
@@ -542,7 +542,7 @@ export const MESSAGES = {
     card: {
       title: 'Card simulator',
       roll: 'Roll a 5★ card',
-      foot: 'Rates reference community-collected statistics.',
+      foot: 'White 40% Green 25% Blue 20% Purple 10% Yellow 5%',
     },
     characters: {
       title: 'Developer characters',
@@ -808,7 +808,7 @@ export const MESSAGES = {
     card: {
       title: 'カードシミュレータ',
       roll: '★5カードを引く',
-      foot: '他プレイヤー集計の確率表を参考にしています。',
+      foot: '白 40% 緑 25% 青 20% 紫 10% 黄 5%',
     },
     characters: {
       title: '開発者キャラ紹介',
